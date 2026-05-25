@@ -19,17 +19,35 @@
 
 ## 📸 界面预览 / Screenshots
 
-### 🌙 暗色主题 (Dark)
-<img src="https://raw.githubusercontent.com/wu66chen/bilibili-mixed-random-player/main/assets/window-dark.png" width="300"/> <img src="https://raw.githubusercontent.com/wu66chen/bilibili-mixed-random-player/main/assets/ball-tooltip-dark.png" width="350"/>
+### 🪟 1. 主窗口 (Main Window)
+> 从左至右：暗色主题 / 亮色主题 / 动森主题
+<br>
 
-### ☀️ 亮色主题 (Light)
-<img src="https://raw.githubusercontent.com/wu66chen/bilibili-mixed-random-player/main/assets/window-light.png" width="300"/> <img src="https://raw.githubusercontent.com/wu66chen/bilibili-mixed-random-player/main/assets/ball-tooltip-light.png" width="350"/>
+<img src="https://raw.githubusercontent.com/wu66chen/bilibili-mixed-random-player/main/assets/window-dark.png" width="270"/> &emsp;
+<img src="https://raw.githubusercontent.com/wu66chen/bilibili-mixed-random-player/main/assets/window-light.png" width="270"/> &emsp;
+<img src="https://raw.githubusercontent.com/wu66chen/bilibili-mixed-random-player/main/assets/window-acnh.png" width="270"/>
 
-### 🍃 动森主题 (ACNH)
-<img src="https://raw.githubusercontent.com/wu66chen/bilibili-mixed-random-player/main/assets/window-acnh.png" width="300"/> <img src="https://raw.githubusercontent.com/wu66chen/bilibili-mixed-random-player/main/assets/ball-tooltip-acnh.png" width="350"/>
+<br><br><br>
 
-### 🪩 迷你悬浮球 (Mini Ball)
-<img src="https://raw.githubusercontent.com/wu66chen/bilibili-mixed-random-player/main/assets/ball-dark.png" width="80"/> <img src="https://raw.githubusercontent.com/wu66chen/bilibili-mixed-random-player/main/assets/ball-light.png" width="80"/> <img src="https://raw.githubusercontent.com/wu66chen/bilibili-mixed-random-player/main/assets/ball-acnh.png" width="80"/>
+### 💬 2. 信息详情框 (Tooltip)
+> 从左至右：暗色主题 / 亮色主题 / 动森主题
+<br>
+
+<img src="https://raw.githubusercontent.com/wu66chen/bilibili-mixed-random-player/main/assets/ball-tooltip-dark.png" width="270"/> &emsp;
+<img src="https://raw.githubusercontent.com/wu66chen/bilibili-mixed-random-player/main/assets/ball-tooltip-light.png" width="270"/> &emsp;
+<img src="https://raw.githubusercontent.com/wu66chen/bilibili-mixed-random-player/main/assets/ball-tooltip-acnh.png" width="270"/>
+
+<br><br><br><br>
+
+### 🪩 3. 迷你悬浮球 (Mini Ball)
+> 极简收起状态，悬浮不遮挡视野
+<br><br>
+
+<img src="https://raw.githubusercontent.com/wu66chen/bilibili-mixed-random-player/main/assets/ball-dark.png" width="85"/> &emsp;&emsp;&emsp;&emsp;&emsp;&emsp;
+<img src="https://raw.githubusercontent.com/wu66chen/bilibili-mixed-random-player/main/assets/ball-light.png" width="85"/> &emsp;&emsp;&emsp;&emsp;&emsp;&emsp;
+<img src="https://raw.githubusercontent.com/wu66chen/bilibili-mixed-random-player/main/assets/ball-acnh.png" width="85"/>
+
+<br><br>
 
 ## 🚀 安装指南 / Installation
 
