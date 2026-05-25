@@ -19,23 +19,11 @@
 
 ## 📸 界面预览 / Screenshots
 
-### 主界面面板 (Main Window)
-<!-- 按 暗色 / 亮色 / 动森 并排展示 -->
-<img src="./assets/window-dark.png" width="32%" />
-<img src="./assets/window-light.png" width="32%" />
-<img src="./assets/window-acnh.png" width="32%" />
-
-### 悬浮球 & 信息详情框 (Floating Ball & Tooltip)
-<!-- 悬停信息展示 -->
-<img src="./assets/ball-tooltip-dark.png" width="32%" />
-<img src="./assets/ball-tooltip-light.png" width="32%" />
-<img src="./assets/ball-tooltip-acnh.png" width="32%" />
-
-### 迷你悬浮球 (Mini Ball)
-<!-- 最小化后的悬浮球 -->
-<img src="./assets/ball-dark.png" width="15%" />
-<img src="./assets/ball-light.png" width="15%" />
-<img src="./assets/ball-acnh.png" width="15%" />
+| 主题风格 (Theme) | 主窗口 (Main Window) | 信息详情框 (Tooltip) | 悬浮球 (Ball) |
+| :---: | :---: | :---: | :---: |
+| **🌙 暗色主题**<br>(Dark) | <img src="./assets/window-dark.png" width="280"/> | <img src="./assets/ball-tooltip-dark.png" width="320"/> | <img src="./assets/ball-dark.png" width="60"/> |
+| **☀️ 亮色主题**<br>(Light) | <img src="./assets/window-light.png" width="280"/> | <img src="./assets/ball-tooltip-light.png" width="320"/> | <img src="./assets/ball-light.png" width="60"/> |
+| **🍃 动森主题**<br>(ACNH) | <img src="./assets/window-acnh.png" width="280"/> | <img src="./assets/ball-tooltip-acnh.png" width="320"/> | <img src="./assets/ball-acnh.png" width="60"/> |
 
 ## 🚀 安装指南 / Installation
 
