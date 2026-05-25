@@ -19,11 +19,17 @@
 
 ## 📸 界面预览 / Screenshots
 
-| 主题风格 (Theme) | 主窗口 (Main Window) | 信息详情框 (Tooltip) | 悬浮球 (Ball) |
-| :---: | :---: | :---: | :---: |
-| **🌙 暗色主题**<br>(Dark) | <img src="./assets/window-dark.png" width="280"/> | <img src="./assets/ball-tooltip-dark.png" width="320"/> | <img src="./assets/ball-dark.png" width="60"/> |
-| **☀️ 亮色主题**<br>(Light) | <img src="./assets/window-light.png" width="280"/> | <img src="./assets/ball-tooltip-light.png" width="320"/> | <img src="./assets/ball-light.png" width="60"/> |
-| **🍃 动森主题**<br>(ACNH) | <img src="./assets/window-acnh.png" width="280"/> | <img src="./assets/ball-tooltip-acnh.png" width="320"/> | <img src="./assets/ball-acnh.png" width="60"/> |
+### 🌙 暗色主题 (Dark)
+<img src="https://raw.githubusercontent.com/wu66chen/bilibili-mixed-random-player/main/assets/window-dark.png" width="300"/> <img src="https://raw.githubusercontent.com/wu66chen/bilibili-mixed-random-player/main/assets/ball-tooltip-dark.png" width="350"/>
+
+### ☀️ 亮色主题 (Light)
+<img src="https://raw.githubusercontent.com/wu66chen/bilibili-mixed-random-player/main/assets/window-light.png" width="300"/> <img src="https://raw.githubusercontent.com/wu66chen/bilibili-mixed-random-player/main/assets/ball-tooltip-light.png" width="350"/>
+
+### 🍃 动森主题 (ACNH)
+<img src="https://raw.githubusercontent.com/wu66chen/bilibili-mixed-random-player/main/assets/window-acnh.png" width="300"/> <img src="https://raw.githubusercontent.com/wu66chen/bilibili-mixed-random-player/main/assets/ball-tooltip-acnh.png" width="350"/>
+
+### 🪩 迷你悬浮球 (Mini Ball)
+<img src="https://raw.githubusercontent.com/wu66chen/bilibili-mixed-random-player/main/assets/ball-dark.png" width="80"/> <img src="https://raw.githubusercontent.com/wu66chen/bilibili-mixed-random-player/main/assets/ball-light.png" width="80"/> <img src="https://raw.githubusercontent.com/wu66chen/bilibili-mixed-random-player/main/assets/ball-acnh.png" width="80"/>
 
 ## 🚀 安装指南 / Installation
 
