@@ -39,9 +39,7 @@
 > 极简收起状态，悬浮不遮挡视野
 <br>
 
-<img src="https://raw.githubusercontent.com/wu66chen/bilibili-mixed-random-player/main/assets/ball-dark.png" width="85"/> &emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;
-<img src="https://raw.githubusercontent.com/wu66chen/bilibili-mixed-random-player/main/assets/ball-light.png" width="85"/> &emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;
-<img src="https://raw.githubusercontent.com/wu66chen/bilibili-mixed-random-player/main/assets/ball-acnh.png" width="85"/>
+<img src="https://raw.githubusercontent.com/wu66chen/bilibili-mixed-random-player/main/assets/ball-dark.png" width="85"/> &emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;<img src="https://raw.githubusercontent.com/wu66chen/bilibili-mixed-random-player/main/assets/ball-light.png" width="85"/> &emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;<img src="https://raw.githubusercontent.com/wu66chen/bilibili-mixed-random-player/main/assets/ball-acnh.png" width="85"/>
 
 <br><br>
 
