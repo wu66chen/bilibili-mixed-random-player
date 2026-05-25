@@ -23,21 +23,21 @@
 > 从左至右：暗色主题 / 亮色主题 / 动森主题
 <br>
 
-<img src="https://raw.githubusercontent.com/wu66chen/bilibili-mixed-random-player/main/assets/window-dark.png" width="270"/> &emsp;
-<img src="https://raw.githubusercontent.com/wu66chen/bilibili-mixed-random-player/main/assets/window-light.png" width="270"/> &emsp;
+<img src="https://raw.githubusercontent.com/wu66chen/bilibili-mixed-random-player/main/assets/window-dark.png" width="270"/>
+<img src="https://raw.githubusercontent.com/wu66chen/bilibili-mixed-random-player/main/assets/window-light.png" width="270"/>
 <img src="https://raw.githubusercontent.com/wu66chen/bilibili-mixed-random-player/main/assets/window-acnh.png" width="270"/>
 
-<br><br><br>
+<br><br>
 
 ### 💬 2. 信息详情框 (Tooltip)
 > 从左至右：暗色主题 / 亮色主题 / 动森主题
 <br>
 
-<img src="https://raw.githubusercontent.com/wu66chen/bilibili-mixed-random-player/main/assets/ball-tooltip-dark.png" width="270"/> &emsp;
-<img src="https://raw.githubusercontent.com/wu66chen/bilibili-mixed-random-player/main/assets/ball-tooltip-light.png" width="270"/> &emsp;
+<img src="https://raw.githubusercontent.com/wu66chen/bilibili-mixed-random-player/main/assets/ball-tooltip-dark.png" width="270"/>
+<img src="https://raw.githubusercontent.com/wu66chen/bilibili-mixed-random-player/main/assets/ball-tooltip-light.png" width="270"/>
 <img src="https://raw.githubusercontent.com/wu66chen/bilibili-mixed-random-player/main/assets/ball-tooltip-acnh.png" width="270"/>
 
-<br><br><br><br>
+<br><br>
 
 ### 🪩 3. 迷你悬浮球 (Mini Ball)
 > 极简收起状态，悬浮不遮挡视野
