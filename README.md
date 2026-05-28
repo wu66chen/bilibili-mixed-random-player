@@ -2,7 +2,7 @@
 
 ![Version](https://img.shields.io/badge/Version-1.2-blue.svg)
 ![License](https://img.shields.io/badge/License-MIT-green.svg)
-[![GreasyFork](https://img.shields.io/badge/GreasyFork-一键安装-red.svg)](https://greasyfork.org/zh-CN/scripts/578892)
+[![GreasyFork](https://img.shields.io/badge/GreasyFork-一键安装-red.svg)](https://update.greasyfork.org/scripts/578892/B%E7%AB%99%E6%94%B6%E8%97%8F%E5%A4%B9%E6%B7%B7%E5%90%88%E9%9A%8F%E6%9C%BA%E6%92%AD%E6%94%BE%E5%99%A8.user.js)
 
 一款专为 Bilibili 网页版深度定制的外挂级播放队列管理器。支持多收藏夹无缝混合、智能洗牌防切歌、多主题无缝切换（含深色/亮色/动森主题），并将浏览器变成极具设计感的媒体播放器。
 
