@@ -46,7 +46,7 @@
 ## 🚀 安装指南 / Installation
 
 1. 确保你的浏览器已安装用户脚本管理器插件 [Tampermonkey](https://www.tampermonkey.net/) (油猴)。
-2. 点击下方链接一键安装最新版脚本：
+2. 点击此链接一键安装最新版脚本：
    👉 **[从 Greasy Fork 安装 (推荐)](https://greasyfork.org/zh-CN/scripts/578892)**
 
 *(注：如果你想从源码安装，也可直接点击本仓库的 `bilibili-random-player.user.js` -> `Raw` 进行安装)*
