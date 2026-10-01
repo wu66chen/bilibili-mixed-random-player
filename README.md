@@ -21,6 +21,12 @@
 
 ### 🪟 1. 主窗口 (Main Window)
 > 从左至右：暗色主题 / 亮色主题 / 动森主题
+> ## 致谢
+
+本项目的部分 UI 视觉风格、配色、圆角组件及界面设计语言参考了 [animal-island-ui](https://github.com/guokaigdg/animal-island-ui)。
+部分相关实现亦参考或使用了该项目提供的设计规范与组件思路，并在此基础上根据本项目的功能和视觉需求进行了重新设计与调整。
+感谢 [guokaigdg](https://github.com/guokaigdg) 开源并维护 `animal-island-ui`。
+`animal-island-ui` 基于 [MIT License](https://github.com/guokaigdg/animal-island-ui/blob/main/LICENSE) 开源，相关代码及资源的版权归原作者所有。
 <br>
 
 <img src="https://raw.githubusercontent.com/wu66chen/bilibili-mixed-random-player/main/assets/window-dark.png" width="270"/>&nbsp;<img src="https://raw.githubusercontent.com/wu66chen/bilibili-mixed-random-player/main/assets/window-light.png" width="270"/>&nbsp;<img src="https://raw.githubusercontent.com/wu66chen/bilibili-mixed-random-player/main/assets/window-acnh.png" width="270"/>
