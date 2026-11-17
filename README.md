@@ -8,7 +8,9 @@
 
 ## 📸 三套主题
 
-默认窗口在 1.4.13 中调整为约同等大小（640×1080 CSS 像素），小视口会自动适配。
+暗色、亮色适合日常浏览；**动森主题采用 [Animal-Island-UI](https://github.com/guokaigdg/animal-island-ui) 的视觉设计风格**，将柔和配色、圆角组件与立体按钮融入播放器界面。
+
+默认窗口为 640×1080 CSS 像素，小视口会自动适配。
 
 | 暗色 | 亮色 | 动森 |
 | --- | --- | --- |
@@ -123,6 +125,8 @@ node tools/review-server.cjs
 
 ## 致谢与许可证
 
-动森主题的 UI 视觉风格、配色、圆角组件及界面设计语言参考了 [animal-island-ui](https://github.com/guokaigdg/animal-island-ui)，并结合本项目功能调整。感谢 [guokaigdg](https://github.com/guokaigdg) 开源维护；原项目基于 MIT License，相关代码及资源版权归原作者所有。
+感谢 [guokaigdg](https://github.com/guokaigdg) 开源的 [Animal-Island-UI](https://github.com/guokaigdg/animal-island-ui)。本项目的动森主题采用其视觉设计风格，并针对混合队列、悬浮窗口和设置界面进行适配；具体样式在用户脚本中实现，无需额外安装 React 组件库。
+
+Animal-Island-UI 使用 [MIT License](https://github.com/guokaigdg/animal-island-ui/blob/main/LICENSE)，其代码及资源版权归原作者所有。
 
 本项目使用 [MIT License](LICENSE)，Copyright (c) 2026 wu66chen。欢迎提交 Issue 或 Pull Request。
