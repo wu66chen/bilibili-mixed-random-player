@@ -1,4 +1,4 @@
-# GitHub 1.4.12 发布准备
+# GitHub 1.4.12 更新记录
 
 目标仓库：`wu66chen/bilibili-mixed-random-player`，默认分支 `main`。
 
@@ -19,6 +19,6 @@
 
 ## 发布边界
 
-本文件记录发布准备，不代表已推送、打标签或创建 GitHub Release。Greasy Fork 本轮不发布，自动更新 URL 保持原状。GitHub 上的版本需下载用户脚本并在管理器中导入，升级后刷新已打开的 B站页面。
+本轮将 1.4.12 用户脚本、README、更新说明与验证工具更新到 GitHub 的 main 分支，不另建 GitHub Release 或版本标签。Greasy Fork 本轮不发布，自动更新 URL 保持原状。GitHub 上的版本可通过 README 下载地址安装或在管理器中导入，升级后刷新已打开的 B站页面。
 
-发布时应将版本对应的 Git 提交、`v1.4.12` 标签和用户脚本附件绑定到同一份内容；Release 正文可使用 CHANGELOG 中的 1.4.12 条目。不要把本地历史验收版本逐个创建为正式 Release。
+后续如创建 GitHub Release，应将版本对应的 Git 提交、`v1.4.12` 标签和用户脚本附件绑定到同一份内容；Release 正文可使用 CHANGELOG 中的 1.4.12 条目。不要把本地历史验收版本逐个创建为正式 Release。

@@ -4,12 +4,12 @@
 
 保留暗色、亮色、动森三套主题，支持悬浮球、窗口尺寸记忆与轻量设置。
 
-**当前发布候选：1.4.12，尚未推送或发布。** [Greasy Fork 发布入口](https://greasyfork.org/zh-CN/scripts/578892) 不代表已包含本次修改。下文描述本地版本；旧版核对见 [1.2 记录](docs/interaction-review-2026-11-17.md)。
+**当前 GitHub 版本：1.4.12。** [下载用户脚本](https://raw.githubusercontent.com/wu66chen/bilibili-mixed-random-player/main/bilibili-mixed-random-player.user.js) · [更新说明](CHANGELOG.md)。Greasy Fork 是独立发布入口，其版本以平台页面为准。
 
 ## 🚀 安装与第一次混合播放
 
 1. 安装 [Tampermonkey（篡改猴）](https://www.tampermonkey.net/)，按管理器提示允许脚本在 B站运行。
-2. 已发布版本从 [Greasy Fork](https://greasyfork.org/zh-CN/scripts/578892) 安装；测试本次修改，请在管理器编辑器中导入当前工作副本的 [用户脚本](bilibili-mixed-random-player.user.js)。核对名称与版本，只启用一份实例。更新后刷新已打开的 B站标签页，避免旧脚本继续写共享状态。
+2. 打开 [GitHub 用户脚本下载地址](https://raw.githubusercontent.com/wu66chen/bilibili-mixed-random-player/main/bilibili-mixed-random-player.user.js)，在 Tampermonkey 中安装或更新；若浏览器仅显示源码，将文件下载后导入管理器。核对版本为 **1.4.12**，只启用一份实例。更新后刷新已打开的 B站标签页，避免旧脚本继续写共享状态。[Greasy Fork](https://greasyfork.org/zh-CN/scripts/578892) 的更新另行发布。
 3. 打开一个有访问权限的具体收藏夹，点击音乐球，再点 **“将当前收藏夹加入混合队列”**。核对反馈中的新增、合并与失效数量。
 4. 点一个队列视频进入播放页。确认原生视频开始播放；若浏览器阻止自动播放，点击 B站原生播放键。
 5. **保留播放页，在另一个标签页打开第二个收藏夹并加入。** 两个收藏夹进入同一混合队列；相同 BV 合并来源。
@@ -115,7 +115,7 @@ node tools/review-server.cjs
 
 ## 📝 版本记录
 
-**1.4.12 发布候选** 汇总本轮混合队列、分 P、多标签页、窗口记忆和三主题设置改进。收起按钮使用与悬浮球相同的小音符，与返回箭头区分。完整说明见 [CHANGELOG](CHANGELOG.md)，发布范围见 [GitHub 发布准备](docs/release-1.4.12.md)。
+**1.4.12** 汇总混合队列、分 P、多标签页、窗口记忆和三主题设置改进。收起按钮使用与悬浮球相同的小音符，与返回箭头区分。完整说明见 [CHANGELOG](CHANGELOG.md)，验证范围见 [GitHub 更新记录](docs/release-1.4.12.md)。
 
 ## 致谢与许可证
 
