@@ -18,6 +18,8 @@ window.GM_getValue=(k,d)=>structuredClone(state[k]??d);window.GM_setValue=(k,v)=
 const fixtureListeners={};window.GM_addValueChangeListener=(key,fn)=>(fixtureListeners[key]??=[]).push(fn);window.GM_registerMenuCommand=()=>{};window.fixtureState=state;
 window.fixtureRemote=(key,value)=>{const old=state[key];state[key]=structuredClone(value);for(const fn of fixtureListeners[key]||[])fn(key,old,structuredClone(value),true)};
 const fixtureTheme=new URLSearchParams(location.search).get('theme');if(['dark','light','acnh'].includes(fixtureTheme))state.BCP_UI.theme=fixtureTheme;
+// Exercise first-use defaults without touching real userscript storage.
+if(new URLSearchParams(location.search).has('fresh'))state.BCP_UI={theme:state.BCP_UI.theme};
 if(new URLSearchParams(location.search).has('startup')) {
  state.BCP_UI.collapsed=new URLSearchParams(location.search).get('startup')==='collapsed';
  window.startupSamples=[];

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         B站收藏夹混合随机播放器
 // @namespace    http://tampermonkey.net/
-// @version      1.4.12
+// @version      1.4.13
 // @description  B站网页版收藏夹随机播放，支持手动随机打乱/复原，按当前顺序播放，支持多个收藏夹混合播放。新增主题切换和多项细节优化。
 // @author       Wesley
 // @license      MIT
@@ -282,7 +282,7 @@
                 <button class="bcp-btn bcp-reset" id="bcp-reset-layout">${icon("reset")}恢复窗口位置与大小</button><p class="bcp-setting-note">只重置窗口与悬浮球，不清空队列或修改收藏。</p>
               </section>
               <section class="bcp-settings-group bcp-playback-note"><h3>${icon("music")}播放与队列</h3><p>同 BV 合并来源；移除前会确认，移出当前项后继续播完。分 P 依次播放，一轮结束后停止。</p></section>
-              <small class="bcp-settings-version">版本 1.4.12</small>
+              <small class="bcp-settings-version">版本 1.4.13</small>
             </section>
 
             <div class="bcp-footer">
@@ -417,11 +417,11 @@
     `;
   const defaults = {
     version: 5,
-    width: 420,
-    height: 620,
+    width: 640,
+    height: 1080,
     collapsed: true,
     theme: "dark",
-    x: Math.max(8, innerWidth - 440),
+    x: Math.max(8, innerWidth - 660),
     y: 60,
     ballX: Math.max(8, innerWidth - 70),
     ballY: 80,
@@ -769,7 +769,7 @@
     const v = viewport();
     direction = "up-left";
     anchor = fitAnchor({ x: v.w - ui.ball - 20, y: v.h - ui.ball - 24 });
-    saveUI({ width: 420, height: 620 });
+    saveUI({ width: defaults.width, height: defaults.height });
     positionFromAnchor();
     persistLayout();
     paint();

@@ -4,11 +4,11 @@
 
 保留暗色、亮色、动森三套主题，支持悬浮球、窗口尺寸记忆与轻量设置。
 
-**当前 GitHub 版本：[1.4.12](https://github.com/wu66chen/bilibili-mixed-random-player/releases/tag/v1.4.12)。** [下载用户脚本](https://raw.githubusercontent.com/wu66chen/bilibili-mixed-random-player/main/bilibili-mixed-random-player.user.js) · [更新说明](CHANGELOG.md)。Greasy Fork 是独立发布入口，其版本以平台页面为准。
+**当前 GitHub 版本：[1.4.13](https://github.com/wu66chen/bilibili-mixed-random-player/releases/tag/v1.4.13)。** [下载用户脚本](https://raw.githubusercontent.com/wu66chen/bilibili-mixed-random-player/main/bilibili-mixed-random-player.user.js) · [更新说明](CHANGELOG.md)。Greasy Fork 是独立发布入口，其版本以平台页面为准。
 
 ## 📸 三套主题
 
-1.4.12 在 ego lite 中的实际界面截图。三套主题使用同一份合成示例队列，展示多个收藏夹混合播放，不含个人收藏或账号信息。
+以下为用户提供的三套主题实际界面截图，仅无损裁去窗口外围内容，保留原图文字与图案。默认窗口在 1.4.13 中调整为约同等大小（640×1080 CSS 像素），小视口会自动适配。点击图片可查看大图。
 
 | 暗色 | 亮色 | 动森 |
 | --- | --- | --- |
@@ -17,7 +17,7 @@
 ## 🚀 安装与第一次混合播放
 
 1. 安装 [Tampermonkey（篡改猴）](https://www.tampermonkey.net/)，按管理器提示允许脚本在 B站运行。
-2. 打开 [GitHub 用户脚本下载地址](https://raw.githubusercontent.com/wu66chen/bilibili-mixed-random-player/main/bilibili-mixed-random-player.user.js)，在 Tampermonkey 中安装或更新；若浏览器仅显示源码，将文件下载后导入管理器。核对版本为 **1.4.12**，只启用一份实例。更新后刷新已打开的 B站标签页，避免旧脚本继续写共享状态。[Greasy Fork](https://greasyfork.org/zh-CN/scripts/578892) 的更新另行发布。
+2. 打开 [GitHub 用户脚本下载地址](https://raw.githubusercontent.com/wu66chen/bilibili-mixed-random-player/main/bilibili-mixed-random-player.user.js)，在 Tampermonkey 中安装或更新；若浏览器仅显示源码，将文件下载后导入管理器。核对版本为 **1.4.13**，只启用一份实例。更新后刷新已打开的 B站标签页，避免旧脚本继续写共享状态。[Greasy Fork](https://greasyfork.org/zh-CN/scripts/578892) 的更新另行发布。
 3. 打开一个有访问权限的具体收藏夹，点击音乐球，再点 **“将当前收藏夹加入混合队列”**。核对反馈中的新增、合并与失效数量。
 4. 点一个队列视频进入播放页。确认原生视频开始播放；若浏览器阻止自动播放，点击 B站原生播放键。
 5. **保留播放页，在另一个标签页打开第二个收藏夹并加入。** 两个收藏夹进入同一混合队列；相同 BV 合并来源。
@@ -29,7 +29,7 @@ GitHub 更新不会自动更新 Greasy Fork；脚本当前自动更新地址仍�
 
 ## 📖 常用操作
 
-| 操作 | 1.4.12 行为 |
+| 操作 | 1.4.13 行为 |
 | --- | --- |
 | 加入收藏夹 | 同 BV 去重并合并来源；再次加入可补充前次中断的内容 |
 | 智能打乱 | 当前视频继续播放、当前项置顶，其余项目洗牌；已移出的条目不会复活 |
@@ -62,7 +62,9 @@ GitHub 更新不会自动更新 Greasy Fork；脚本当前自动更新地址仍�
 | 双击顶栏收起 | 默认开启 |
 | 点击外部收起 | 默认关闭 |
 | 减少透明效果 | 默认关闭，保留原主题质感 |
-| 恢复窗口位置与大小 | 恢复 420×620 目标尺寸及初始位置，不清队列、不改收藏 |
+| 恢复窗口位置与大小 | 恢复 640×1080 目标尺寸及初始位置，不清队列、不改收藏 |
+
+首次使用默认目标尺寸为 **640×1080 CSS 像素**；升级保留原有尺寸，需要采用新默认值时，点设置中的“恢复窗口位置与大小”。
 
 窗口和球共用锚点、目标尺寸与相对视口位置，同一管理器的 B站页面共享布局。小视口临时限制显示尺寸，不覆盖保存的目标尺寸；若随后主动拖动或缩放窗口，则将当前实际尺寸作为新的记忆尺寸。找不到窗口时，也可从 Tampermonkey 的脚本菜单重置位置。
 
@@ -82,7 +84,9 @@ GitHub 更新不会自动更新 Greasy Fork；脚本当前自动更新地址仍�
 
 ## 验证范围
 
-2026-11-17，通过 Windows 的 **ego lite 官方 API** 验证用户已安装的脚本，并经管理器更新为本地版本。不是全新安装验收，不代表所有浏览器兼容。
+1.4.13 本轮在 ego lite 合成页面验证三主题的首次展开、重置、展开收起及小视口往返恢复；640×1080 目标尺寸和已有用户尺寸均保留。截图来源为用户提供的原图，未当作本轮播放验收。
+
+2026-11-17，此前通过 Windows 的 **ego lite 官方 API** 验证用户已安装的 1.4.12 脚本，并经管理器更新为本地版本。不是全新安装验收，不代表所有浏览器兼容。
 
 - 真实页面：拖拽缩放后手动切歌保留 600×700；暂停保留滚动位置；设置、主题、跨页恢复；另一收藏夹页控制播放页。
 - 真实视频：移出当前项不暂停；拖到末尾后让视频实际结束，核对跳转目标确为原队列下一项，并保留窗口尺寸。未以完整视频时长验收长期挂机。
@@ -115,7 +119,7 @@ node tools/review-server.cjs
 
 ## 📝 版本记录
 
-**1.4.12** 汇总混合队列、分 P、多标签页、窗口记忆和三主题设置改进。收起按钮使用与悬浮球相同的小音符，与返回箭头区分。完整说明见 [CHANGELOG](CHANGELOG.md)，验证范围见 [GitHub 更新记录](docs/release-1.4.12.md)。
+**1.4.13** 增大默认窗口，并替换三主题截图。**1.4.12** 汇总混合队列、分 P、多标签页、窗口记忆和三主题设置改进。完整说明见 [CHANGELOG](CHANGELOG.md)，此前验证范围见 [1.4.12 更新记录](docs/release-1.4.12.md)。
 
 ## 致谢与许可证
 
