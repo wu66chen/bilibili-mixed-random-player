@@ -19,6 +19,8 @@
 
 ## 发布边界
 
-本轮将 1.4.12 用户脚本、README、更新说明与验证工具更新到 GitHub 的 main 分支，不另建 GitHub Release 或版本标签。Greasy Fork 本轮不发布，自动更新 URL 保持原状。GitHub 上的版本可通过 README 下载地址安装或在管理器中导入，升级后刷新已打开的 B站页面。
+正式版本使用 GitHub Release 与标签 [v1.4.12](https://github.com/wu66chen/bilibili-mixed-random-player/releases/tag/v1.4.12)，绑定包含新版 README 和三主题截图的提交。附件为同一提交中的用户脚本及 SHA-256 校验文件；本地历史验收版本不逐个创建 Release。
 
-后续如创建 GitHub Release，应将版本对应的 Git 提交、`v1.4.12` 标签和用户脚本附件绑定到同一份内容；Release 正文可使用 CHANGELOG 中的 1.4.12 条目。不要把本地历史验收版本逐个创建为正式 Release。
+三主题截图在 ego lite 中加载仓库的 1.4.12 脚本，使用合成队列和相同 420×620 窗口尺寸，替换原有窗口展示图。主题预览放在简介之后、安装步骤之前。截图只证明对应界面的展示，不替代真实 B站播放验收。
+
+Greasy Fork 本轮不发布，自动更新 URL 保持原状。可通过 README 下载地址安装，或下载 Release 的用户脚本附件后导入管理器，升级后刷新已打开的 B站页面。

@@ -4,7 +4,15 @@
 
 保留暗色、亮色、动森三套主题，支持悬浮球、窗口尺寸记忆与轻量设置。
 
-**当前 GitHub 版本：1.4.12。** [下载用户脚本](https://raw.githubusercontent.com/wu66chen/bilibili-mixed-random-player/main/bilibili-mixed-random-player.user.js) · [更新说明](CHANGELOG.md)。Greasy Fork 是独立发布入口，其版本以平台页面为准。
+**当前 GitHub 版本：[1.4.12](https://github.com/wu66chen/bilibili-mixed-random-player/releases/tag/v1.4.12)。** [下载用户脚本](https://raw.githubusercontent.com/wu66chen/bilibili-mixed-random-player/main/bilibili-mixed-random-player.user.js) · [更新说明](CHANGELOG.md)。Greasy Fork 是独立发布入口，其版本以平台页面为准。
+
+## 📸 三套主题
+
+1.4.12 在 ego lite 中的实际界面截图。三套主题使用同一份合成示例队列，展示多个收藏夹混合播放，不含个人收藏或账号信息。
+
+| 暗色 | 亮色 | 动森 |
+| --- | --- | --- |
+| <img src="assets/window-dark.png" alt="暗色混合队列" width="270"> | <img src="assets/window-light.png" alt="亮色混合队列" width="270"> | <img src="assets/window-acnh.png" alt="动森混合队列" width="270"> |
 
 ## 🚀 安装与第一次混合播放
 
@@ -87,14 +95,6 @@ GitHub 更新不会自动更新 Greasy Fork；脚本当前自动更新地址仍�
 - 所有显示缩放比例、长期自然后台冻结、多页写入的原子事务、所有自动播放拒绝场景仍未完整验收。未宣称性能提升。
 
 最新窗口状态对照和连续操作验收见 [1.4.4 深度核对](docs/window-model-1.4.4.md)。前轮七项 UI 修复和真实验收见 [1.4.1 验收总结](docs/final-acceptance-1.4.1.md)。此前分 P 与多页结果详见 [1.3.4 最终验收总结](docs/final-acceptance-1.3.4.md) 与 [前轮窗口／队列验收](docs/upgrade-validation-2026-11-17.md)。
-
-## 📸 三套主题
-
-以下为仓库原有展示图，展示主题个性，不是 1.4.12 当前操作截图。
-
-| 暗色 | 亮色 | 动森 |
-| --- | --- | --- |
-| <img src="assets/window-dark.png" alt="暗色混合队列" width="270"> | <img src="assets/window-light.png" alt="亮色混合队列" width="270"> | <img src="assets/window-acnh.png" alt="动森混合队列" width="270"> |
 
 ## 开发与验证
 
