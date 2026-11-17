@@ -1,85 +1,124 @@
-# 🎵 B站收藏夹混合随机播放器 (Bilibili Mixed Random Player)
+# 🎵 B站收藏夹混合随机播放器
 
-![Version](https://img.shields.io/badge/Version-1.2-blue.svg)
-![License](https://img.shields.io/badge/License-MIT-green.svg)
-[![GreasyFork](https://img.shields.io/badge/GreasyFork-一键安装-red.svg)](https://update.greasyfork.org/scripts/578892/B%E7%AB%99%E6%94%B6%E8%97%8F%E5%A4%B9%E6%B7%B7%E5%90%88%E9%9A%8F%E6%9C%BA%E6%92%AD%E6%94%BE%E5%99%A8.user.js)
+把分散在多个 B站收藏夹里的音乐放进一个队列，一起随机听。点“智能打乱”，当前视频继续播放，其余视频重新排列；同一个 BV 只加入一次，并保留它来自哪些收藏夹。
 
-一款专为 Bilibili 网页版深度定制的外挂级播放队列管理器。支持多收藏夹无缝混合、智能洗牌防切歌、多主题无缝切换（含深色/亮色/动森主题），并将浏览器变成极具设计感的媒体播放器。
+保留暗色、亮色、动森三套主题，支持悬浮球、窗口尺寸记忆与轻量设置。
 
-## ✨ 核心特性 / Features
+**当前发布候选：1.4.12，尚未推送或发布。** [Greasy Fork 发布入口](https://greasyfork.org/zh-CN/scripts/578892) 不代表已包含本次修改。下文描述本地版本；旧版核对见 [1.2 记录](docs/interaction-review-2026-11-17.md)。
 
-- 🎨 **多主题随心切换 (NEW)**：采用「Apple风格 深色/亮色磨砂玻璃」主题，以及可爱圆润的「动森 (ACNH)」主题，实现多个 B站标签页刷新后同步切换！
-- 🚀 **历史进度强力拦截 (NEW)**：底层强杀 B站自带的历史播放记录跳转。自动连播切歌时，永远从 0 秒开始，不突兀跳转。
-- 📂 **快捷直达与追溯 (NEW)**：视频播放时想快速回到收藏夹网页？“跳转到”下拉菜单一键跳转回源收藏夹主页。
-- 🖱️ **双击收起主窗口 (NEW)**：鼠标双击窗口顶栏，快速缩小为悬浮球。
-- 🔀 **打乱时置顶当前项**：播放中点击打乱，自动将“当前正在观看的视频”锁定在第一位，洗牌绝不打断当前播放。
-- 📦 **多维度资源融合**：一键抓取提取任意 B站收藏夹，多列个收藏夹完美融合为一个待播队列，内置自动剔除失效视频的“清道夫”机制。
-- 🔄 **原生态双向同步**：主窗口的「播放/暂停」按钮与 B站原生视频播放器状态毫秒级双向同步（你点网页暂停，悬浮窗同步暂停）。
-- 🛸 **绝对领域防走丢**：拖拽任意摆放，悬浮球永远智能对齐，永不越界跑出屏幕；支持 tampermonkey 的系统级菜单一键重置位置（⚙️ 找不到悬浮窗？点我重置位置）。
+## 🚀 安装与第一次混合播放
 
-## 📸 界面预览 / Screenshots
+1. 安装 [Tampermonkey（篡改猴）](https://www.tampermonkey.net/)，按管理器提示允许脚本在 B站运行。
+2. 已发布版本从 [Greasy Fork](https://greasyfork.org/zh-CN/scripts/578892) 安装；测试本次修改，请在管理器编辑器中导入当前工作副本的 [用户脚本](bilibili-mixed-random-player.user.js)。核对名称与版本，只启用一份实例。更新后刷新已打开的 B站标签页，避免旧脚本继续写共享状态。
+3. 打开一个有访问权限的具体收藏夹，点击音乐球，再点 **“将当前收藏夹加入混合队列”**。核对反馈中的新增、合并与失效数量。
+4. 点一个队列视频进入播放页。确认原生视频开始播放；若浏览器阻止自动播放，点击 B站原生播放键。
+5. **保留播放页，在另一个标签页打开第二个收藏夹并加入。** 两个收藏夹进入同一混合队列；相同 BV 合并来源。
+6. 点 **“智能打乱”**：当前项置顶，其余视频重新排列。之后按这份顺序播放，播完一轮停止。
 
-### 🪟 1. 主窗口 (Main Window)
-> 从左至右：暗色主题 / 亮色主题 / 动森主题
-> #### 致谢
-> 本项目的 “动森主题” UI 视觉风格、配色、圆角组件及界面设计语言参考了 [animal-island-ui](https://github.com/guokaigdg/animal-island-ui)。
-> 部分相关实现亦参考或使用了该项目提供的设计规范与组件思路，并在此基础上根据本项目的功能和视觉需求进行了重新设计与调整。
-> 感谢 [guokaigdg](https://github.com/guokaigdg) 开源并维护 `animal-island-ui`。
-> `animal-island-ui` 基于 [MIT License](https://github.com/guokaigdg/animal-island-ui/blob/main/LICENSE) 开源，相关代码及资源的版权归原作者所有。
-<br>
+GitHub 更新不会自动更新 Greasy Fork；脚本当前自动更新地址仍指向 Greasy Fork。
 
-<img src="https://raw.githubusercontent.com/wu66chen/bilibili-mixed-random-player/main/assets/window-dark.png" width="270"/>&nbsp;<img src="https://raw.githubusercontent.com/wu66chen/bilibili-mixed-random-player/main/assets/window-light.png" width="270"/>&nbsp;<img src="https://raw.githubusercontent.com/wu66chen/bilibili-mixed-random-player/main/assets/window-acnh.png" width="270"/>
+首次建议使用测试收藏夹。私密收藏夹需要登录账号有访问权限；脚本不会请求密码或导出 Cookie。
 
-<br>
+## 📖 常用操作
 
-### 💬 2. 信息详情框 (Tooltip)
-> 从左至右：暗色主题 / 亮色主题 / 动森主题
-<br>
+| 操作 | 1.4.12 行为 |
+| --- | --- |
+| 加入收藏夹 | 同 BV 去重并合并来源；再次加入可补充前次中断的内容 |
+| 智能打乱 | 当前视频继续播放、当前项置顶，其余项目洗牌；已移出的条目不会复活 |
+| 恢复原序 | 恢复首次加入顺序，保留当前播放身份 |
+| 播放／暂停、上一首／下一首 | 操作传给一个负责播放的标签页；浏览标签页留在原处 |
+| 切歌 | 进入对应视频页并尝试从头播放；需要加载网页，不承诺无缝音频衔接 |
+| 分 P 视频 | 按 P1→P2→…播放，最后一 P 结束后才接队列下一项；读取不到分 P 信息时停留并提供重试 |
+| 重复打开当前队列视频 | 副本暂停原生自动播放，面板仍可控制唯一播放页 |
+| 移出 | 确认后只修改混合队列，**不删除 B站收藏**；可撤销最近一次移除 |
+| 移出当前项 | 当前视频继续播完，再接删除时的原下一项；该下一项也被移出时，接它的后续项 |
+| 清空 | 确认后清空共享队列与来源；当前网页视频继续播放，脚本不再接播 |
+| 定位当前播放 | 主动滚到当前项；暂停和状态同步不会主动抢走浏览位置 |
+| 窗口 | 拖顶栏移动、四边四角八方向缩放，限制在视口内；右下角聚焦后可用方向键微调。球随窗口同步移动，收起瞬间不跳位 |
+| 跳转到 | 在新标签页打开载入过的收藏夹 |
 
-<img src="https://raw.githubusercontent.com/wu66chen/bilibili-mixed-random-player/main/assets/ball-tooltip-dark.png" width="270"/>&nbsp;<img src="https://raw.githubusercontent.com/wu66chen/bilibili-mixed-random-player/main/assets/ball-tooltip-light.png" width="270"/>&nbsp;<img src="https://raw.githubusercontent.com/wu66chen/bilibili-mixed-random-player/main/assets/ball-tooltip-acnh.png" width="270"/>
+“随机”是一次洗牌后依次播放，不是每首结束重新抽签。同一脚本管理器的 B站标签页共享队列；移除、清空和排序会同步影响其他页。
 
-<br>
+旧版队列没有逐视频来源信息，升级不会猜测；重新加入相应收藏夹可以补齐。队列是加入时的快照，不会持续镜像 B站收藏夹的增删。
 
-### 🪩 3. 迷你悬浮球 (Mini Ball)
-> 极简收起状态，悬浮不遮挡视野
-<br>
+## ⚙️ 轻量设置
 
-<img src="https://raw.githubusercontent.com/wu66chen/bilibili-mixed-random-player/main/assets/ball-dark.png" width="85"/> &emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;<img src="https://raw.githubusercontent.com/wu66chen/bilibili-mixed-random-player/main/assets/ball-light.png" width="85"/> &emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;<img src="https://raw.githubusercontent.com/wu66chen/bilibili-mixed-random-player/main/assets/ball-acnh.png" width="85"/>
+顶栏点“设置”，即时生效；返回后保留列表中原来正在看的条目，底部播放控制留在面板内。
 
-<br><br>
+| 偏好 | 默认／范围 |
+| --- | --- |
+| 主题 | 延续原选择；暗色、亮色、动森 |
+| 列表字号 | 13、15、17 px；默认 13 |
+| 密度 | 标准、紧凑；默认标准 |
+| 悬浮球大小 | 44、52、64 px；默认 52 |
+| 双击顶栏收起 | 默认开启 |
+| 点击外部收起 | 默认关闭 |
+| 减少透明效果 | 默认关闭，保留原主题质感 |
+| 恢复窗口位置与大小 | 恢复 420×620 目标尺寸及初始位置，不清队列、不改收藏 |
 
-## 🚀 安装指南 / Installation
+窗口和球共用锚点、目标尺寸与相对视口位置，同一管理器的 B站页面共享布局。小视口临时限制显示尺寸，不覆盖保存的目标尺寸；若随后主动拖动或缩放窗口，则将当前实际尺寸作为新的记忆尺寸。找不到窗口时，也可从 Tampermonkey 的脚本菜单重置位置。
 
-1. 确保你的浏览器已安装用户脚本管理器插件 [Tampermonkey](https://www.tampermonkey.net/) (油猴)。
-2. 点击此链接一键安装最新版脚本：
-   👉 **[从 Greasy Fork 安装 (推荐)](https://greasyfork.org/zh-CN/scripts/578892)**
+## 🛠️ 遇到问题时
 
-*(注：如果你想从源码安装，也可直接点击本仓库的 `bilibili-random-player.user.js` -> `Raw` 进行安装)*
+| 现象 | 恢复路径 |
+| --- | --- |
+| 没有音乐球 | 检查安装、启用和站点运行权限，再刷新 |
+| 读取中断 | 已读取部分保留，消息明确说明中断；检查网络或访问权限后再次点“加入”，相同 BV 不重复追加 |
+| 数量少于预期 | 查看合并、失效计数及中断信息；同 BV 合并会减少条目数 |
+| 视频无法播放 | 点原生播放键，检查视频可访问性；也可点下一首跳过，不会无限自动跳过失败项 |
+| 无法确认分 P 信息 | 点“重试分 P 信息”，恢复后可接播；也可手动下一首。不会把未知分 P 数量当作单 P 跳过 |
+| 播放页关闭后暂时无响应 | 控制页租约最多约 15 秒过期，再操作可由当前页接管 |
+| 窗口位置不合适 | 设置或管理器菜单中恢复窗口位置与大小 |
 
-## 📖 使用说明 / Usage
+失效过滤依据 API 项目与“已失效”标题，不能覆盖所有不可播放原因。每次最多读取 100 页，每页请求 20 条；达到上限会提示部分读取。脚本依赖 B站网页、视频事件和接口，网页变化可能影响行为。
 
-1. 打开任意 B站收藏夹页面。
-2. 点击屏幕右侧悬浮球展开面板，点击蓝色按钮 **“➕ 将当前收藏夹加入列表”**。
-3. 可前往多个不同的收藏夹页面继续点击加入，实现混合播放。
-4. 点击列表中任意视频开始播放，面板底部的播放按钮可直接遥控网页播放器。
-5. **主题切换**：点击面板右上角的 **“主题 ▾”** 下拉菜单即可实时切换 UI 风格。
+## 验证范围
 
-## 📝 历史更新日志 / Changelog
+2026-11-17，通过 Windows 的 **ego lite 官方 API** 验证用户已安装的脚本，并经管理器更新为本地版本。不是全新安装验收，不代表所有浏览器兼容。
 
-**v1.2 (当前版本)**
-- `Feature` 全新引入多主题系统：深色 (Dark)、亮色 (Light)、动森 (ACNH)。
-- `Feature` 新增自动跳集时的“0秒强制起播”机制，完美拦截 B站历史播放记录读取引起的中途播放的问题。
-- `Feature` 顶部新增 **“↗️ 跳转到 ▾”** 下拉菜单，可快速打开已载入的收藏夹原网址。
-- `Feature` 顶栏拖拽区新增“双击收起”交互。
-- `Optimize` 优化悬浮窗默认尺寸，调整为 420x620 以容纳更多内容。
+- 真实页面：拖拽缩放后手动切歌保留 600×700；暂停保留滚动位置；设置、主题、跨页恢复；另一收藏夹页控制播放页。
+- 真实视频：移出当前项不暂停；拖到末尾后让视频实际结束，核对跳转目标确为原队列下一项，并保留窗口尺寸。未以完整视频时长验收长期挂机。
+- 队列末项实际结束后，保持原视频并停止，显示“本轮播放结束”。
+- 合成数据：28 项 DOM 回归通过，覆盖删除／撤销、恢复／打乱、去重多来源、中断重试、设置返回、重置范围及外部标题转义。
+- 分 P：真实 2 P 和 3 P 视频衔接、最后一 P 才切队列、队列末项 P3 播完停止；10 项播放与缩放逻辑回归通过。
+- 多标签页：两页同时重载测试收藏夹仍为 123 个不重复条目；重复打开当前视频时副本暂停。
+- 多标签页控制、远程移除／撤销、浏览锚点保留、关闭播放页后接管通过；定时器失联后的接管通过逻辑回归，未冒充真实冻结验收。
+- 非活动标签页播放：P2 约 348 秒完整实播并接队列下一项。但 ego lite 的非活动页面仍报告 `visible`，未据此宣称普通浏览器最小化／`hidden` 限流验收通过。
+- 所有显示缩放比例、长期自然后台冻结、多页写入的原子事务、所有自动播放拒绝场景仍未完整验收。未宣称性能提升。
 
-**v1.0 ~ v1.1 核心迭代回顾**
-- `Feature` 悬浮球绝对坐标固定，主面板动态象限寻址展开。
-- `Feature` 统一 Tooltip（提示框）与主窗口的毛玻璃透视效果。
-- `Feature` 实现底栏播放按钮与网页原生 video 元素的双向状态同步。
-- `Fix` 解决调整窗口缩放导致的 UI 越界消失问题。
+最新窗口状态对照和连续操作验收见 [1.4.4 深度核对](docs/window-model-1.4.4.md)。前轮七项 UI 修复和真实验收见 [1.4.1 验收总结](docs/final-acceptance-1.4.1.md)。此前分 P 与多页结果详见 [1.3.4 最终验收总结](docs/final-acceptance-1.3.4.md) 与 [前轮窗口／队列验收](docs/upgrade-validation-2026-11-17.md)。
 
-## 📄 许可证 / License
+## 📸 三套主题
 
-本项目基于 [MIT License](LICENSE) 开源。
-Copyright (c) 2026 Wesley. 欢迎提交 PR 或 Issue！
+以下为仓库原有展示图，展示主题个性，不是 1.4.12 当前操作截图。
+
+| 暗色 | 亮色 | 动森 |
+| --- | --- | --- |
+| <img src="assets/window-dark.png" alt="暗色混合队列" width="270"> | <img src="assets/window-light.png" alt="亮色混合队列" width="270"> | <img src="assets/window-acnh.png" alt="动森混合队列" width="270"> |
+
+## 开发与验证
+
+主体为单个用户脚本，无构建步骤。以下命令在本地 Node 24.19.0 执行，不是浏览器兼容性证明：
+
+```powershell
+node --check bilibili-mixed-random-player.user.js
+node tools/playback-regression.cjs
+node tools/layout-regression.cjs
+node tools/review-server.cjs
+```
+
+浏览器打开 `http://127.0.0.1:8765/?fid=100` 可查看合成收藏夹。在该页面开发者控制台执行 `await runPlayerRegression()`，预期返回 28 个 `pass: true`。每次重新运行前刷新页面。服务器仅监听本机，不使用账号；不要点击合成视频的播放／切歌按钮，它们不是有效 B站视频。
+
+`tools/review-repro.cjs` 是历史 1.2 复现工具，读取固定 Git 提交，预期 2 通过、4 失败，退出码 1；不测试当前代码。当前 DOM 回归见 [browser-regression.js](tools/browser-regression.js)。
+
+反馈请附浏览器、管理器及脚本版本、步骤、预期与实际结果。使用测试收藏夹，不提交密码、Cookie、授权头或未遮挡的个人资料。
+
+## 📝 版本记录
+
+**1.4.12 发布候选** 汇总本轮混合队列、分 P、多标签页、窗口记忆和三主题设置改进。收起按钮使用与悬浮球相同的小音符，与返回箭头区分。完整说明见 [CHANGELOG](CHANGELOG.md)，发布范围见 [GitHub 发布准备](docs/release-1.4.12.md)。
+
+## 致谢与许可证
+
+动森主题的 UI 视觉风格、配色、圆角组件及界面设计语言参考了 [animal-island-ui](https://github.com/guokaigdg/animal-island-ui)，并结合本项目功能调整。感谢 [guokaigdg](https://github.com/guokaigdg) 开源维护；原项目基于 MIT License，相关代码及资源版权归原作者所有。
+
+本项目使用 [MIT License](LICENSE)，Copyright (c) 2026 wu66chen。欢迎提交 Issue 或 Pull Request。

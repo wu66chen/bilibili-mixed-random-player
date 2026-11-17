@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         B站收藏夹混合随机播放器
 // @namespace    http://tampermonkey.net/
-// @version      1.2
+// @version      1.4.12
 // @description  B站网页版收藏夹随机播放，支持手动随机打乱/复原，按当前顺序播放，支持多个收藏夹混合播放。新增主题切换和多项细节优化。
 // @author       Wesley
 // @license      MIT
@@ -16,76 +16,12 @@
 // @updateURL https://update.greasyfork.org/scripts/578892/B%E7%AB%99%E6%94%B6%E8%97%8F%E5%A4%B9%E6%B7%B7%E5%90%88%E9%9A%8F%E6%9C%BA%E6%92%AD%E6%94%BE%E5%99%A8.meta.js
 // ==/UserScript==
 
-(function() {
-    'use strict';
-
-    // --- 若是通过自动切集进入的页面，强制从0秒开始播放 ---
-    if (new URLSearchParams(window.location.search).get('bcp_start') === '1') {
-        let forced = false;
-        let videoJumper = setInterval(() => {
-            let video = document.querySelector('.bpx-player-video-area video, #bilibili-player video, video');
-            if (video && video.readyState >= 1) {
-                // 如果B站尝试读取历史进度(跳到大于2秒)，强行将其拉回0秒
-                if (video.currentTime > 2 && !forced) {
-                    video.currentTime = 0;
-                    forced = true;
-                    clearInterval(videoJumper);
-                } else if (video.currentTime > 0 && video.currentTime <= 2) {
-                    forced = true;
-                    clearInterval(videoJumper);
-                }
-            }
-        }, 50);
-        setTimeout(() => clearInterval(videoJumper), 5000); // 5秒后停止检测
-    }
-
-    // --- 状态管理 ---
-    let uiState = GM_getValue('BCP_UI', null);
-    if (!uiState || !uiState.version || uiState.version < 4.7) {
-        let oldTheme = uiState ? uiState.theme : 'dark';
-        uiState = {
-            version: 4.7,
-            width: 420, height: 620,
-            collapsed: true,
-            theme: oldTheme || 'dark',
-            ballX: window.innerWidth - 70,
-            ballY: Math.max(0, Math.floor(window.innerHeight / 2 - 26))
-        };
-        uiState.x = Math.max(0, uiState.ballX - uiState.width + 52);
-        uiState.y = Math.max(0, Math.floor(window.innerHeight / 2 - 280));
-        GM_setValue('BCP_UI', uiState);
-    }
-
-    let playState = GM_getValue('BCP_PLAY', {
-        originalList: [], currentList: [], currentIndex: -1, isPlaying: false, folderNames: [], folders: []
-    });
-    if (!playState.folderNames) playState.folderNames = [];
-    if (!playState.folders) playState.folders = [];
-    if (playState.currentIndex === undefined) playState.currentIndex = -1;
-
-    function savePlayState() { GM_setValue('BCP_PLAY', playState); renderList(); }
-    function saveUIState() { GM_setValue('BCP_UI', uiState); }
-
-    GM_addValueChangeListener('BCP_PLAY', function(name, old_value, new_value, remote) {
-        if (remote) { playState = new_value; renderList(); }
-    });
-
-    // --- 注册油猴菜单，一键重置位置 ---
-    GM_registerMenuCommand("⚙️ 找不到悬浮窗？点我重置位置", function() {
-        uiState.width = 420; uiState.height = 620;
-        uiState.ballX = window.innerWidth - 70;
-        uiState.ballY = Math.max(0, Math.floor(window.innerHeight / 2 - 26));
-        uiState.x = uiState.ballX - uiState.width + 52;
-        uiState.y = Math.max(0, Math.floor(window.innerHeight / 2 - 280));
-        uiState.collapsed = true;
-        saveUIState();
-        initUI();
-        alert("✅ 已经将悬浮窗和悬浮球恢复到默认初始位置！");
-    });
-
-    // --- 主题与设计语言 CSS ---
-    const css = `
-        :root {
+(function () {
+  "use strict";
+  if (window.top !== window.self || document.getElementById("bcp-window"))
+    return;
+  const css = `
+        #bcp-root {
             --bcp-bg: rgba(28, 28, 30, 0.75); --bcp-border: rgba(255, 255, 255, 0.15);
             --bcp-text: #f5f5f7; --bcp-text-sec: #a1a1a6; --bcp-accent: #0a84ff;
             --bcp-hover: rgba(255, 255, 255, 0.1); --bcp-btn-bg: rgba(255, 255, 255, 0.08);
@@ -94,7 +30,7 @@
         }
 
         /* 亮色主题 - 已进行对比度微调提升 */
-        [data-bcp-theme="light"] {
+        #bcp-root[data-bcp-theme="light"] {
             --bcp-bg: rgba(255, 255, 255, 0.95); --bcp-border: rgba(0, 0, 0, 0.15);
             --bcp-text: #000000; --bcp-text-sec: #555555; --bcp-accent: #0062cc;
             --bcp-hover: rgba(0, 0, 0, 0.08); --bcp-btn-bg: rgba(0, 0, 0, 0.06);
@@ -109,7 +45,7 @@
         [data-bcp-theme="light"] .bcp-theme-item { border-bottom: 1px solid rgba(0,0,0,0.05); }
 
         /* 动森主题 (animal-island-ui 风格) */
-        [data-bcp-theme="acnh"] {
+        #bcp-root[data-bcp-theme="acnh"] {
             --bcp-bg: #f8f8f0; --bcp-border: #e4d8c8;
             --bcp-text: #827157; --bcp-text-sec: #a69986; --bcp-accent: #19c8b9;
             --bcp-hover: #f1ebd9; --bcp-btn-bg: #ffffff;
@@ -156,9 +92,9 @@
             box-shadow: var(--bcp-shadow);
             display: flex; flex-direction: column; font-family: var(--bcp-font); color: var(--bcp-text);
             resize: both; overflow: hidden; min-width: 320px; min-height: 400px;
-            transition: opacity 0.25s cubic-bezier(0.25, 0.1, 0.25, 1), transform 0.25s cubic-bezier(0.25, 0.1, 0.25, 1);
+            transition: opacity 0.25s cubic-bezier(0.25, 0.1, 0.25, 1);
         }
-        #bcp-window.hidden { opacity: 0; pointer-events: none; transform: scale(0.95); }
+        #bcp-window.hidden { opacity: 0; pointer-events: none; }
 
         .bcp-header { padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--bcp-border); cursor: grab; user-select: none; }
         .bcp-header:active { cursor: grabbing; }
@@ -205,7 +141,7 @@
         .bcp-play-btn.primary:hover { background: #fff; transform: scale(1.05); }
 
         #bcp-ball { position: fixed; z-index: 9999999; width: 52px; height: 52px; cursor: pointer; user-select: none; transition: opacity 0.25s, transform 0.25s; }
-        #bcp-ball.hidden { opacity: 0; pointer-events: none; transform: scale(0.5); }
+        #bcp-ball.hidden { opacity: 0; pointer-events: none; }
 
         #bcp-ball-inner {
             width: 100%; height: 100%; border-radius: 26px;
@@ -265,10 +201,25 @@
         .bcp-theme-item.active { color: var(--bcp-accent); font-weight: bold; }
     `;
 
-    const html = `
+  const icons = {
+    back: "M15 18l-6-6 6-6",
+    check: "M5 12l4 4L19 6",
+    chevron: "M6 9l6 6 6-6",
+    palette:
+      "M12 3a9 9 0 1 0 0 18h1a2 2 0 0 0 1-3.7 1.5 1.5 0 0 1 1-2.8h2A4 4 0 0 0 21 10a9 9 0 0 0-9-7 M7 10h.01 M10 6.5h.01 M15 7h.01",
+    window: "M4 4h16v16H4z M4 9h16 M7 6.5h.01 M10 6.5h.01",
+    reset: "M3 10a9 9 0 1 1 2 9 M3 4v6h6",
+    music:
+      "M9 18V5l12-2v13 M9 8l12-2 M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0 M21 16a3 3 0 1 1-6 0 3 3 0 0 1 6 0",
+  };
+  const icon = (name) =>
+    `<svg class="bcp-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${icons[name]}"/></svg>`;
+
+  const launcherIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>`;
+  const html = `
         <div id="bcp-ball" class="hidden">
             <div id="bcp-ball-inner">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
+                ${launcherIcon}
             </div>
             <div id="bcp-ball-tooltip">
                 <div class="bcp-tt-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--bcp-accent)" stroke-width="2"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg> B站收藏夹混合播放器</div>
@@ -279,9 +230,9 @@
 
         <div id="bcp-window">
             <div class="bcp-header" id="bcp-drag-handle">
-                <div id="bcp-collapse-btn" title="收起为悬浮球"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg></div>
+                <button type="button" id="bcp-collapse-btn" title="收起为悬浮球" aria-label="收起为悬浮球">${launcherIcon}</button>
                 <div class="bcp-header-center"><div class="bcp-header-title">混合播放列表 (<span id="bcp-count">0</span>)</div><div class="bcp-header-subtitle" id="bcp-folder-names">暂无收藏夹</div></div>
-                <div style="width:28px;"></div>
+                <button id="bcp-settings-open" class="bcp-btn" title="外观与窗口设置">设置</button>
             </div>
 
             <div class="bcp-actions">
@@ -309,7 +260,30 @@
                 </div>
             </div>
 
+            <div id="bcp-notice" role="status" aria-live="polite"></div>
+            <div id="bcp-list-tools"><button class="bcp-btn" id="bcp-locate">定位当前播放</button><button class="bcp-btn" id="bcp-undo" hidden>撤销移除</button></div>
             <div class="bcp-list-container" id="bcp-list"></div>
+            <section id="bcp-settings" hidden aria-label="播放器设置">
+              <div class="bcp-settings-heading"><button class="bcp-btn bcp-back" id="bcp-settings-back" aria-label="返回队列">${icon("back")}<span>返回队列</span></button><span class="bcp-saved">${icon("check")}即时保存</span></div>
+              <h2>播放器设置</h2><p class="bcp-settings-intro">让窗口与阅读习惯更合拍，播放继续。</p>
+              <section class="bcp-settings-group" aria-labelledby="bcp-appearance-title">
+                <h3 id="bcp-appearance-title">${icon("palette")}外观与阅读</h3>
+                <div class="bcp-setting-row"><div><span id="bcp-theme-label">主题</span><small>保留你喜欢的界面质感</small></div><button class="bcp-btn bcp-choice" id="bcp-setting-theme" data-setting="theme" aria-expanded="false" aria-haspopup="listbox" aria-labelledby="bcp-theme-label bcp-theme-value"><span id="bcp-theme-value"></span>${icon("chevron")}</button></div>
+                <div class="bcp-setting-row"><div><span id="bcp-font-label">列表字号</span><small>只调整歌曲标题大小</small></div><button class="bcp-btn bcp-choice" id="bcp-setting-font" data-setting="font" aria-expanded="false" aria-haspopup="listbox" aria-labelledby="bcp-font-label bcp-font-value"><span id="bcp-font-value"></span>${icon("chevron")}</button></div>
+                <div class="bcp-setting-row"><div><span id="bcp-density-label">列表密度</span><small>在留白与可见条目之间选择</small></div><button class="bcp-btn bcp-choice" id="bcp-setting-density" data-setting="density" aria-expanded="false" aria-haspopup="listbox" aria-labelledby="bcp-density-label bcp-density-value"><span id="bcp-density-value"></span>${icon("chevron")}</button></div>
+                <label class="bcp-setting-row bcp-switch-row" for="bcp-setting-opaque"><div><span>减少透明效果</span><small>使用实色背景，让文字更清楚</small></div><input type="checkbox" role="switch" id="bcp-setting-opaque"></label>
+              </section>
+              <section class="bcp-settings-group" aria-labelledby="bcp-window-title">
+                <h3 id="bcp-window-title">${icon("window")}悬浮球与窗口</h3>
+                <div class="bcp-setting-row"><div><span id="bcp-ball-label">悬浮球大小</span><small>拖动悬浮球可重新放置</small></div><button class="bcp-btn bcp-choice" id="bcp-setting-ball" data-setting="ball" aria-expanded="false" aria-haspopup="listbox" aria-labelledby="bcp-ball-label bcp-ball-value"><span id="bcp-ball-value"></span>${icon("chevron")}</button></div>
+                <label class="bcp-setting-row bcp-switch-row" for="bcp-setting-double"><div><span>双击顶栏收起</span><small>拖动、缩放时不会触发</small></div><input type="checkbox" role="switch" id="bcp-setting-double"></label>
+                <label class="bcp-setting-row bcp-switch-row" for="bcp-setting-outside"><div><span>点击窗口外收起</span><small>菜单、确认框与移除操作不受影响</small></div><input type="checkbox" role="switch" id="bcp-setting-outside"></label>
+                <p class="bcp-setting-note">拖动顶栏移动窗口，四边和四角均可调整大小。悬浮球同步跟随窗口，收起时不会重新定位。</p>
+                <button class="bcp-btn bcp-reset" id="bcp-reset-layout">${icon("reset")}恢复窗口位置与大小</button><p class="bcp-setting-note">只重置窗口与悬浮球，不清空队列或修改收藏。</p>
+              </section>
+              <section class="bcp-settings-group bcp-playback-note"><h3>${icon("music")}播放与队列</h3><p>同 BV 合并来源；移除前会确认，移出当前项后继续播完。分 P 依次播放，一轮结束后停止。</p></section>
+              <small class="bcp-settings-version">版本 1.4.12</small>
+            </section>
 
             <div class="bcp-footer">
                 <div class="bcp-playing-info">
@@ -323,378 +297,1537 @@
                 </div>
             </div>
         </div>
+        <dialog id="bcp-confirm" aria-labelledby="bcp-confirm-title" aria-describedby="bcp-confirm-detail"><h3 id="bcp-confirm-title"></h3><p id="bcp-confirm-song"></p><p id="bcp-confirm-detail"></p><div class="bcp-confirm-actions"><button id="bcp-confirm-cancel" class="bcp-btn">取消</button><button id="bcp-confirm-remove" class="bcp-btn bcp-btn-danger">移出队列</button></div></dialog>
     `;
 
-    const style = document.createElement('style'); style.innerHTML = css; document.head.appendChild(style);
-    const wrapper = document.createElement('div'); wrapper.innerHTML = html; document.body.appendChild(wrapper);
+  const fixes = `
+      #bcp-root, #bcp-root * { box-sizing: border-box; }
+      #bcp-root[hidden] { display:none !important; }
+      #bcp-root.bcp-initializing #bcp-window, #bcp-root.bcp-initializing #bcp-ball { transition:none !important; }
+      #bcp-root [hidden] { display: none !important; }
+      #bcp-root button, #bcp-root select, #bcp-root input { font-family: inherit; }
+      #bcp-root button:focus, #bcp-root [tabindex]:focus, #bcp-root select:focus, #bcp-root input:focus { outline:none !important; }
+      #bcp-root button:focus-visible { background:var(--bcp-hover); text-decoration:underline; text-underline-offset:3px; }
+      #bcp-root #bcp-ball:focus-visible #bcp-ball-inner > svg { transform:translate(-.75px,-.5px) scale(1.14); }
+      #bcp-window { min-width: min(320px, 100vw - 16px); min-height: min(400px, 100vh - 16px); resize: none; }
+      #bcp-resize { position: absolute; right: 0; bottom: 0; width: 24px; height: 24px; border: 0; background: transparent; color: var(--bcp-text-sec); cursor: nwse-resize; touch-action: none; }
+      #bcp-drag-handle, #bcp-ball { touch-action: none; }
+      #bcp-collapse-btn { background: transparent; border: 0; flex-shrink: 0; }
+      #bcp-root .bcp-actions > div, #bcp-root .bcp-actions > div > div { flex-wrap: wrap; }
+      #bcp-root .bcp-btn { white-space: nowrap; }
+      #bcp-root .bcp-header, #bcp-root .bcp-footer { flex-shrink: 0; }
+      #bcp-list { min-height: 50px; overflow-anchor: none; }
+      #bcp-root .bcp-item-title { font-size: var(--bcp-size, 13px); }
+      #bcp-root .bcp-item-info { padding-right: 24px; }
+      #bcp-root .bcp-item-del { opacity: .75; border: 0; cursor: pointer; }
+      #bcp-root[data-density="compact"] .bcp-item { padding-top: 5px; padding-bottom: 5px; margin-top: 0; margin-bottom: 0; }
+      #bcp-root[data-density="compact"] .bcp-item-cover { width: 56px; height: 36px; }
+      #bcp-list-tools { display: flex; gap: 6px; padding: 6px 16px; }
+      #bcp-notice:empty { display: none; }
+      #bcp-notice { font-size: 12px; line-height: 1.5; padding: 8px 16px; flex-shrink: 0; }
+      #bcp-settings { flex: 1; min-height: 0; overflow-y: auto; padding: 16px; font-size: 14px; }
+      #bcp-settings h3 { margin: 16px 0; font-size: 16px; }
+      #bcp-settings label { display: flex; align-items: center; gap: 10px; margin: 14px 0; }
+      #bcp-settings select { margin-left: auto; padding: 6px; border-radius: 6px; background: var(--bcp-bg); color: var(--bcp-text); border: 1px solid var(--bcp-border); }
+      #bcp-settings p { font-size: 12px; line-height: 1.6; margin: 12px 0; }
+      #bcp-root[data-opaque="true"] #bcp-window, #bcp-root[data-opaque="true"] #bcp-ball-inner { background: #1c1c1e; backdrop-filter: none; }
+      #bcp-root[data-opaque="true"][data-bcp-theme="light"] #bcp-window, #bcp-root[data-opaque="true"][data-bcp-theme="light"] #bcp-ball-inner { background: #fff; }
+      #bcp-root[data-opaque="true"][data-bcp-theme="acnh"] #bcp-window, #bcp-root[data-opaque="true"][data-bcp-theme="acnh"] #bcp-ball-inner { background: #f8f8f0; }
+      @media (prefers-reduced-motion: reduce) { #bcp-root * { transition: none !important; scroll-behavior: auto !important; } }
+      #bcp-root { --bcp-bg:rgba(25,28,34,.94); --bcp-scroll-thumb:#778394; --bcp-scroll-track:rgba(255,255,255,.06); --bcp-control-border:rgba(255,255,255,.22); --bcp-settings-line:rgba(255,255,255,.1); }
+      #bcp-root[data-bcp-theme="light"] { --bcp-scroll-thumb:#7e8995; --bcp-scroll-track:#e7ebef; --bcp-control-border:#c1c9d2; --bcp-settings-line:#dfe4e9; }
+      #bcp-root[data-bcp-theme="acnh"] { --bcp-scroll-thumb:#a28f73; --bcp-scroll-track:#eee6d7; --bcp-control-border:#d5c6ae; --bcp-settings-line:#e4d8c8; --bcp-text-sec:#75664f; }
+      #bcp-list, #bcp-settings { scrollbar-gutter:stable; scrollbar-width:auto; scrollbar-color:var(--bcp-scroll-thumb) var(--bcp-scroll-track); }
+      #bcp-list::-webkit-scrollbar, #bcp-settings::-webkit-scrollbar { width:10px; }
+      #bcp-list::-webkit-scrollbar-track, #bcp-settings::-webkit-scrollbar-track { background:var(--bcp-scroll-track); border-radius:8px; }
+      #bcp-list::-webkit-scrollbar-thumb, #bcp-settings::-webkit-scrollbar-thumb { background:var(--bcp-scroll-thumb); border:2px solid transparent; background-clip:padding-box; border-radius:8px; }
+      #bcp-root .bcp-icon { width:18px; height:18px; flex:none; display:block; }
+      #bcp-root button { -webkit-tap-highlight-color:transparent; }
+      #bcp-root .bcp-btn { gap:6px; }
+      #bcp-root .bcp-resize-handle { position:fixed; z-index:10000001; border:0; border-radius:0; padding:0; background:transparent; touch-action:none; pointer-events:auto; }
+      #bcp-window:not(.hidden), #bcp-ball:not(.hidden), #bcp-menu, #bcp-confirm { pointer-events:auto; }
+      #bcp-root .bcp-resize-handle[data-edge="n"], #bcp-root .bcp-resize-handle[data-edge="s"] { cursor:ns-resize; }
+      #bcp-root .bcp-resize-handle[data-edge="e"], #bcp-root .bcp-resize-handle[data-edge="w"] { cursor:ew-resize; }
+      #bcp-root .bcp-resize-handle[data-edge="nw"], #bcp-root .bcp-resize-handle[data-edge="se"] { cursor:nwse-resize; }
+      #bcp-root .bcp-resize-handle[data-edge="ne"], #bcp-root .bcp-resize-handle[data-edge="sw"] { cursor:nesw-resize; }
+      #bcp-root #bcp-resize::after { content:""; position:absolute; right:5px; bottom:5px; width:6px; height:6px; border-right:2px solid var(--bcp-text-sec); border-bottom:2px solid var(--bcp-text-sec); border-radius:0 0 3px; opacity:.65; }
+      #bcp-root.bcp-dragging { user-select:none; }
+      #bcp-root.bcp-dragging #bcp-window, #bcp-root.bcp-dragging #bcp-ball { transition:none; }
+      #bcp-ball-inner { border-radius:50%; }
+      #bcp-root[data-bcp-theme="dark"] #bcp-ball-inner { background:#293b52; border:2px solid #9eb8d7; box-shadow:0 6px 20px rgba(0,0,0,.5); }
+      #bcp-root[data-bcp-theme="light"] #bcp-ball-inner { background:#fff; border:2px solid #8295aa; box-shadow:0 6px 20px rgba(24,39,58,.22); }
+      #bcp-root[data-bcp-theme="acnh"] #bcp-ball-inner { background:#f8f8f0; border:3px solid #9b896d; box-shadow:0 6px 18px rgba(73,60,40,.26); }
+      #bcp-ball-inner > svg { display:block; width:52%; height:52%; overflow:visible; transform:translate(-.75px,-.5px); }
+      #bcp-root[data-bcp-theme="dark"] #bcp-ball-inner > svg { color:#fff; }
+      #bcp-root[data-bcp-theme="light"] #bcp-ball-inner > svg { color:#27384a; }
+      #bcp-root[data-bcp-theme="acnh"] #bcp-ball-inner > svg { color:#087b72; }
+      #bcp-root #bcp-settings { padding:20px; container-type:inline-size; }
+      #bcp-root .bcp-settings-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:18px; }
+      #bcp-root .bcp-back { padding:6px 0; border:0; background:none; box-shadow:none; border-radius:6px; color:var(--bcp-text-sec); }
+      #bcp-root .bcp-back:hover { color:var(--bcp-text); background:var(--bcp-hover); }
+      #bcp-root .bcp-saved { display:flex; gap:4px; align-items:center; color:var(--bcp-text-sec); font-size:11px; white-space:nowrap; }
+      #bcp-root .bcp-saved .bcp-icon { width:14px; height:14px; }
+      #bcp-root #bcp-settings h2 { font:600 21px/1.3 var(--bcp-font); margin:0 0 6px; letter-spacing:0; }
+      #bcp-root #bcp-settings .bcp-settings-intro { margin:0; color:var(--bcp-text-sec); font-size:12px; line-height:1.6; }
+      #bcp-root .bcp-settings-group { padding:22px 0 18px; border-bottom:1px solid var(--bcp-settings-line); }
+      #bcp-root #bcp-settings h3 { display:flex; gap:8px; align-items:center; margin:0 0 6px; font-size:14px; line-height:1.5; font-weight:600; }
+      /* Headings need explicit tokens: host h2/h3 rules beat inherited color/font. */
+      #bcp-root #bcp-settings h2, #bcp-root #bcp-settings h3 { color:var(--bcp-text) !important; font-family:var(--bcp-font) !important; font-style:normal; text-transform:none; }
+      #bcp-root #bcp-settings h3 .bcp-icon { color:inherit; }
+      #bcp-root[data-bcp-theme="acnh"] #bcp-settings h2, #bcp-root[data-bcp-theme="acnh"] #bcp-settings h3 { font-weight:700; }
+      #bcp-root #bcp-settings .bcp-setting-row { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:18px; margin:0; padding:14px 0; font-size:14px; line-height:1.4; }
+      #bcp-root .bcp-setting-row > div { min-width:0; }
+      #bcp-root .bcp-setting-row small { display:block; font-size:11px; color:var(--bcp-text-sec); margin-top:4px; line-height:1.5; }
+      #bcp-root .bcp-choice { min-width:112px; min-height:36px; padding:7px 10px; justify-content:space-between; border:1px solid var(--bcp-control-border); font-size:12px; }
+      #bcp-root .bcp-choice .bcp-icon { width:14px; height:14px; color:var(--bcp-text-sec); }
+      #bcp-root[data-bcp-theme="acnh"] .bcp-choice { border-width:2px; border-radius:12px; box-shadow:0 2px 0 var(--bcp-border); }
+      #bcp-root .bcp-switch-row { cursor:pointer; }
+      #bcp-root .bcp-switch-row input { appearance:none; -webkit-appearance:none; width:36px; height:22px; border:1px solid var(--bcp-control-border); border-radius:14px; background:var(--bcp-btn-bg); position:relative; cursor:pointer; margin:0; }
+      #bcp-root .bcp-switch-row input::before { content:""; position:absolute; width:14px; height:14px; border-radius:50%; top:3px; left:3px; background:var(--bcp-text-sec); transition:transform .16s ease-out; }
+      #bcp-root .bcp-switch-row input:checked { background:var(--bcp-accent); border-color:var(--bcp-accent); }
+      #bcp-root .bcp-switch-row input:checked::before { transform:translateX(14px); background:#fff; }
+      #bcp-root .bcp-switch-row:has(input:focus-visible) > div > span { text-decoration:underline; text-underline-offset:3px; }
+      #bcp-root #bcp-settings .bcp-setting-note, #bcp-root .bcp-playback-note p { font-size:11px; line-height:1.7; color:var(--bcp-text-sec); margin:8px 0; }
+      #bcp-root .bcp-reset { margin-top:8px; min-height:36px; }
+      #bcp-root .bcp-settings-version { display:block; padding-top:18px; font-size:11px; color:var(--bcp-text-sec); }
+      #bcp-root .bcp-menu-panel { position:fixed; z-index:10000005; transform:none; right:auto; padding:5px; gap:2px; max-height:260px; overflow:auto; scrollbar-color:var(--bcp-scroll-thumb) var(--bcp-scroll-track); transition:opacity .12s ease-out; }
+      #bcp-root .bcp-menu-item { display:flex; align-items:center; justify-content:space-between; gap:16px; width:100%; min-height:36px; padding:8px 10px; border:0; border-radius:7px; background:none; color:var(--bcp-text); text-align:left; font:13px/1.4 var(--bcp-font); text-decoration:none; cursor:pointer; }
+      #bcp-root .bcp-menu-item > span:first-child { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+      #bcp-root .bcp-menu-item:hover, #bcp-root .bcp-menu-item:focus-visible { background:var(--bcp-hover); }
+      #bcp-root .bcp-menu-item[aria-selected="true"] { color:var(--bcp-accent); font-weight:600; }
+      #bcp-root[data-bcp-theme="dark"] .bcp-menu-item[aria-selected="true"] { color:#69b7ff; }
+      #bcp-root[data-bcp-theme="acnh"] .bcp-menu-item[aria-selected="true"] { color:#087b72; }
+      #bcp-root[data-bcp-theme="acnh"] .bcp-btn-primary, #bcp-root[data-bcp-theme="acnh"] .bcp-play-btn.primary { color:#064c45; }
+      #bcp-root[data-bcp-theme="acnh"] .bcp-btn-primary:hover { background:#15b9ac; }
+      #bcp-root[data-bcp-theme="acnh"] .bcp-switch-row input:checked::before { background:#064c45; }
+      #bcp-root .bcp-menu-check .bcp-icon { width:16px; height:16px; }
+      #bcp-root #bcp-confirm { width:min(380px,calc(100vw - 32px)); padding:24px; margin:auto; border:1px solid var(--bcp-control-border); border-radius:16px; background:var(--bcp-bg); color:var(--bcp-text); font-family:var(--bcp-font); backdrop-filter:blur(25px); box-shadow:0 18px 60px rgba(0,0,0,.3); }
+      /* Host CSS can override the browser's dialog:not([open]) display rule. */
+      #bcp-root #bcp-confirm:not([open]) { display:none !important; pointer-events:none !important; }
+      #bcp-root #bcp-confirm[open] { display:block; position:fixed; inset:0; max-height:calc(100dvh - 32px); overflow:auto; }
+      #bcp-confirm::backdrop { background:rgba(0,0,0,.3); }
+      #bcp-root #bcp-confirm h3 { margin:0 0 14px; font-size:17px; line-height:1.4; }
+      #bcp-root #bcp-confirm h3 { color:var(--bcp-text) !important; font-family:var(--bcp-font) !important; font-style:normal; text-transform:none; }
+      #bcp-root #bcp-confirm-song { margin:0 0 10px; font-size:14px; line-height:1.5; overflow-wrap:anywhere; max-height:90px; overflow:auto; }
+      #bcp-root #bcp-confirm-detail { color:var(--bcp-text-sec); font-size:12px; line-height:1.7; margin:0 0 20px; }
+      #bcp-root .bcp-confirm-actions { display:flex; justify-content:flex-end; gap:10px; }
+      #bcp-root[data-bcp-theme="acnh"] #bcp-confirm { background:#f8f8f0; border:3px solid var(--bcp-border); border-radius:22px; }
+      @container (max-width:300px) { #bcp-root .bcp-setting-row small { max-width:145px; } #bcp-root .bcp-choice { min-width:100px; } #bcp-root #bcp-settings .bcp-setting-row { gap:10px; } }
 
-    const win = document.getElementById('bcp-window'); const ball = document.getElementById('bcp-ball');
-    const dragHandle = document.getElementById('bcp-drag-handle'); const collapseBtn = document.getElementById('bcp-collapse-btn');
-    const listEl = document.getElementById('bcp-list'); const addCurrentBtn = document.getElementById('bcp-add-current');
-
-    // --- 主题切换逻辑（自定义下拉菜单） ---
-    const themeBtn = document.getElementById('bcp-theme-btn');
-    const themeMenu = document.getElementById('bcp-theme-menu');
-    const themeNames = { 'dark': '暗色', 'light': '亮色', 'acnh': '动森' };
-
-    if (themeBtn && themeMenu) {
-        // 初始化按钮文字
-        themeBtn.innerHTML = ` ${themeNames[uiState.theme || 'dark']} ▾`;
-
-        themeBtn.onclick = (e) => {
-            e.stopPropagation();
-            // 打开主题菜单时，自动关闭跳转菜单
-            document.getElementById('bcp-jump-menu')?.classList.remove('show');
-            themeMenu.classList.toggle('show');
-            // 标记当前选中的主题样式
-            themeMenu.querySelectorAll('.bcp-theme-item').forEach(item => {
-                item.classList.toggle('active', item.getAttribute('data-theme') === (uiState.theme || 'dark'));
-            });
-        };
-
-        themeMenu.addEventListener('click', (e) => {
-            let item = e.target.closest('.bcp-theme-item');
-            if (item) {
-                uiState.theme = item.getAttribute('data-theme');
-                saveUIState();
-                document.documentElement.setAttribute('data-bcp-theme', uiState.theme);
-                themeBtn.innerHTML = ` ${themeNames[uiState.theme]} ▾`;
-                themeMenu.classList.remove('show');
-            }
-        });
-    }
-
-    // --- 初始化 UI 防走丢安全边界检测 ---
-    function initUI() {
-        let vw = window.innerWidth;
-        let vh = window.innerHeight;
-
-        if (typeof uiState.width !== 'number' || isNaN(uiState.width)) uiState.width = 420;
-        if (typeof uiState.height !== 'number' || isNaN(uiState.height)) uiState.height = 620;
-
-        // 如果页面已正常加载出尺寸，执行边界纠正防止乱跑
-        if (vw > 100 && vh > 100) {
-            uiState.width = Math.max(320, Math.min(uiState.width, vw - 20));
-            uiState.height = Math.max(400, Math.min(uiState.height, vh - 20));
-
-            if (typeof uiState.x !== 'number' || isNaN(uiState.x) || uiState.x > vw || uiState.x + uiState.width < 0) {
-                uiState.x = Math.max(0, vw - uiState.width - 20);
-            }
-            if (typeof uiState.y !== 'number' || isNaN(uiState.y) || uiState.y > vh || uiState.y + uiState.height < 0) {
-                uiState.y = Math.max(0, Math.floor(vh / 2 - uiState.height / 2));
-            }
-
-            if (typeof uiState.ballX !== 'number' || isNaN(uiState.ballX) || uiState.ballX > vw || uiState.ballX + 52 < 0) {
-                uiState.ballX = vw - 70;
-            }
-            if (typeof uiState.ballY !== 'number' || isNaN(uiState.ballY) || uiState.ballY > vh || uiState.ballY + 52 < 0) {
-                uiState.ballY = Math.max(0, Math.floor(vh / 2 - 26));
-            }
-        }
-
-        win.style.width = uiState.width + 'px'; win.style.height = uiState.height + 'px';
-        win.style.left = uiState.x + 'px'; win.style.top = uiState.y + 'px';
-        ball.style.left = uiState.ballX + 'px'; ball.style.top = uiState.ballY + 'px';
-        updateBallPositionClass();
-
-        if (uiState.collapsed) { win.classList.add('hidden'); ball.classList.remove('hidden'); }
-        else { win.classList.remove('hidden'); ball.classList.add('hidden'); }
-
-        document.documentElement.setAttribute('data-bcp-theme', uiState.theme || 'dark');
-    }
-    initUI();
-
-    new ResizeObserver(entries => { for (let entry of entries) { uiState.width = entry.contentRect.width; uiState.height = entry.contentRect.height; saveUIState(); } }).observe(win);
-
-    function makeDraggable(element, handle, onDragEnd) {
-        let isDragging = false; let offsetX, offsetY;
-        handle.addEventListener('mousedown', (e) => {
-            if (e.target.closest('button, svg, #bcp-collapse-btn, a, select, .bcp-dropdown-menu')) return;
-            isDragging = true; offsetX = e.clientX - element.getBoundingClientRect().left; offsetY = e.clientY - element.getBoundingClientRect().top;
-            document.body.style.userSelect = 'none';
-        });
-        document.addEventListener('mousemove', (e) => {
-            if (!isDragging) return;
-            let nx = Math.max(0, Math.min(e.clientX - offsetX, window.innerWidth - element.offsetWidth));
-            let ny = Math.max(0, Math.min(e.clientY - offsetY, window.innerHeight - element.offsetHeight));
-            element.style.left = nx + 'px'; element.style.top = ny + 'px';
-        });
-        document.addEventListener('mouseup', () => {
-            if (isDragging) { isDragging = false; document.body.style.userSelect = ''; if(onDragEnd) onDragEnd(element.offsetLeft, element.offsetTop); }
-        });
-    }
-
-    makeDraggable(win, dragHandle, (x, y) => { uiState.x = x; uiState.y = y; saveUIState(); });
-
-    function updateBallPositionClass() { if (uiState.ballX < window.innerWidth / 2) ball.classList.add('ball-left'); else ball.classList.remove('ball-left'); }
-
-    // 双击顶栏直接收起（自定义更短频率的极速判定）
-    let lastClickTime = 0;
-    dragHandle.addEventListener('click', (e) => {
-        if (e.target.closest('button, svg, #bcp-collapse-btn, a, select, .bcp-dropdown-menu')) return;
-        let currentTime = new Date().getTime();
-        if (currentTime - lastClickTime < 250) { // 250毫秒的严格双击判定窗口
-            collapseBtn.click();
-            lastClickTime = 0;
-        } else {
-            lastClickTime = currentTime;
-        }
+    `;
+  const defaults = {
+    version: 5,
+    width: 420,
+    height: 620,
+    collapsed: true,
+    theme: "dark",
+    x: Math.max(8, innerWidth - 440),
+    y: 60,
+    ballX: Math.max(8, innerWidth - 70),
+    ballY: 80,
+    font: 13,
+    density: "standard",
+    ball: 52,
+    double: true,
+    outside: false,
+    opaque: false,
+    direction: "right",
+  };
+  let ui = { ...defaults, ...GM_getValue("BCP_UI", {}) };
+  // Only fields changed by this page are committed; idle pages never write layout.
+  function saveUI(patch) {
+    // Storage merges prevent unrelated preferences being lost. The live page's
+    // geometry must not silently adopt another page's size halfway through a gesture.
+    GM_setValue("BCP_UI", {
+      ...defaults,
+      ...GM_getValue("BCP_UI", {}),
+      ...patch,
+      version: 6,
     });
-
-    // --- 下拉菜单跳转逻辑 ---
-    const jumpBtn = document.getElementById('bcp-jump-btn');
-    const jumpMenu = document.getElementById('bcp-jump-menu');
-    if (jumpBtn && jumpMenu) {
-        jumpBtn.onclick = (e) => {
-            e.stopPropagation();
-            document.getElementById('bcp-theme-menu')?.classList.remove('show'); // 打开跳转菜单时关闭主题菜单
-            jumpMenu.classList.toggle('show');
-            if (jumpMenu.classList.contains('show')) {
-                jumpMenu.innerHTML = '';
-                if (playState.folders && playState.folders.length > 0) {
-                    playState.folders.forEach(f => {
-                        let a = document.createElement('a');
-                        a.className = 'bcp-jump-item';
-                        // 使用已存储的收藏夹URL作为跳转链接，在新标签页打开
-                        a.href = f.url || `https://space.bilibili.com/${window.__INITIAL_STATE__?.mid || ''}/favlist?fid=${f.fid}`;
-                        a.target = '_blank';
-                        a.innerText = f.name;
-                        a.title = f.name;
-                        jumpMenu.appendChild(a);
-                    });
-                } else {
-                    jumpMenu.innerHTML = '<div class="bcp-jump-empty">暂无载入收藏夹</div>';
-                }
-            }
-        };
-
-        // 全局点击外部自动关闭所有下拉菜单
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('.bcp-dropdown')) {
-                document.querySelectorAll('.bcp-dropdown-menu').forEach(menu => menu.classList.remove('show'));
-            }
+    ui = { ...ui, ...patch, version: 6 };
+  }
+  const empty = () => ({
+    originalList: [],
+    currentList: [],
+    currentIndex: -1,
+    isPlaying: false,
+    folders: [],
+    folderNames: [],
+  });
+  function normalize(state) {
+    state = { ...empty(), ...state };
+    const current = state.currentList[state.currentIndex]?.bvid;
+    const unique = (list) => {
+      const map = new Map();
+      for (const item of list) {
+        if (!item.bvid) continue;
+        const prior = map.get(item.bvid);
+        const sources = [
+          ...new Map(
+            [...(prior?.sources || []), ...(item.sources || [])].map((s) => [
+              s.fid,
+              s,
+            ]),
+          ).values(),
+        ];
+        map.set(item.bvid, { ...(prior || item), sources });
+      }
+      return [...map.values()];
+    };
+    state.originalList = unique(state.originalList);
+    state.currentList = unique(state.currentList);
+    state.currentIndex = current
+      ? state.currentList.findIndex((v) => v.bvid === current)
+      : -1;
+    return state;
+  }
+  let state = normalize(GM_getValue("BCP_PLAY", empty()));
+  function latest() {
+    state = normalize(GM_getValue("BCP_PLAY", empty()));
+  }
+  function save() {
+    GM_setValue("BCP_PLAY", state);
+    render();
+  }
+  function current() {
+    return state.detached?.item || state.currentList[state.currentIndex];
+  }
+  const style = document.createElement("style");
+  style.textContent = css + fixes;
+  document.head.appendChild(style);
+  const root = document.createElement("div");
+  root.id = "bcp-root";
+  root.hidden = true;
+  root.classList.add("bcp-initializing");
+  root.style.cssText =
+    "position:fixed;inset:0;z-index:2147483647;pointer-events:none;";
+  root.innerHTML = html;
+  // Like the helper, keep the floating UI outside a replaced/hidden site body.
+  document.documentElement.appendChild(root);
+  const $ = (id) => document.getElementById("bcp-" + id);
+  const win = $("window"),
+    ball = $("ball"),
+    list = $("list");
+  const clamp = (v, lo, hi) =>
+    Math.max(lo, Math.min(Number.isFinite(v) ? v : lo, Math.max(lo, hi)));
+  const esc = (value) =>
+    String(value ?? "").replace(
+      /[&<>"']/g,
+      (c) =>
+        ({
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#39;",
+        })[c],
+    );
+  const safeURL = (value) => {
+    try {
+      const url = new URL(value, location.href);
+      return /^https?:$/.test(url.protocol) ? url.href : "";
+    } catch {
+      return "";
+    }
+  };
+  function notify(message) {
+    $("notice").textContent = message;
+  }
+  // Geometry follows the helper's four-direction anchor model. The live anchor
+  // moves with every panel gesture; collapsing only changes visibility.
+  let geometry,
+    gesture = null,
+    suppressClick = false,
+    gestureUntil = 0;
+  let anchor = { x: ui.ballX, y: ui.ballY };
+  let direction = ["up-left", "up-right", "down-left", "down-right"].includes(
+    ui.direction,
+  )
+    ? ui.direction
+    : ui.direction === "right"
+      ? "down-right"
+      : "down-left";
+  const resizeHandles = [];
+  const viewport = () => ({
+    w: window.visualViewport?.width || innerWidth,
+    h: window.visualViewport?.height || innerHeight,
+    x: window.visualViewport?.offsetLeft || 0,
+    y: window.visualViewport?.offsetTop || 0,
+  });
+  function fitRect(rect) {
+    const v = viewport(),
+      gap = Math.min(12, v.w / 20, v.h / 20);
+    const width = clamp(
+        rect.width,
+        Math.min(320, rect.width, v.w - 2 * gap),
+        v.w - 2 * gap,
+      ),
+      height = clamp(
+        rect.height,
+        Math.min(400, rect.height, v.h - 2 * gap),
+        v.h - 2 * gap,
+      );
+    return {
+      x: clamp(rect.x, gap, v.w - width - gap),
+      y: clamp(rect.y, gap, v.h - height - gap),
+      width,
+      height,
+    };
+  }
+  function fitAnchor(point) {
+    const v = viewport(),
+      gap = Math.min(12, v.w / 20, v.h / 20),
+      size = Math.min(ui.ball, v.w - 2 * gap, v.h - 2 * gap);
+    return {
+      x: clamp(point.x, gap, v.w - size - gap),
+      y: clamp(point.y, gap, v.h - size - gap),
+      size,
+    };
+  }
+  function anchorFromPanel() {
+    const size = fitAnchor(anchor).size;
+    return fitAnchor({
+      x: direction.endsWith("left")
+        ? geometry.x + geometry.width - size
+        : geometry.x,
+      y: direction.startsWith("up")
+        ? geometry.y + geometry.height - size
+        : geometry.y,
+    });
+  }
+  function renderGeometry(syncAnchor = !ui.collapsed) {
+    const v = viewport();
+    Object.assign(win.style, {
+      left: geometry.x + v.x + "px",
+      top: geometry.y + v.y + "px",
+      width: geometry.width + "px",
+      height: geometry.height + "px",
+      minWidth: Math.min(320, geometry.width) + "px",
+      minHeight: Math.min(400, geometry.height) + "px",
+      transformOrigin: `${direction.endsWith("left") ? "right" : "left"} ${direction.startsWith("up") ? "bottom" : "top"}`,
+    });
+    if (syncAnchor) anchor = anchorFromPanel();
+    else anchor = fitAnchor(anchor);
+    Object.assign(ball.style, {
+      left: anchor.x + v.x + "px",
+      top: anchor.y + v.y + "px",
+      width: anchor.size + "px",
+      height: anchor.size + "px",
+    });
+    ball.classList.toggle("ball-left", anchor.x < v.w / 2);
+    const l = geometry.x + v.x,
+      t = geometry.y + v.y,
+      r = l + geometry.width,
+      b = t + geometry.height;
+    const zones = {
+      n: [l + 12, t - 4, geometry.width - 24, 8],
+      s: [l + 12, b - 4, geometry.width - 24, 8],
+      w: [l - 4, t + 12, 8, geometry.height - 24],
+      e: [r - 4, t + 12, 8, geometry.height - 24],
+      nw: [l - 6, t - 6, 16, 16],
+      ne: [r - 10, t - 6, 16, 16],
+      sw: [l - 6, b - 10, 16, 16],
+      se: [r - 10, b - 10, 16, 16],
+    };
+    for (const handle of resizeHandles) {
+      const [x, y, width, height] = zones[handle.dataset.edge];
+      Object.assign(handle.style, {
+        left: x + "px",
+        top: y + "px",
+        width: Math.max(1, width) + "px",
+        height: Math.max(1, height) + "px",
+      });
+      handle.hidden = ui.collapsed;
+    }
+  }
+  // One layout snapshot owns anchor, desired size, direction and relative position.
+  // Temporary viewport fitting never overwrites this user-authored snapshot.
+  let savedLayout;
+  function layoutSnapshot() {
+    const v = viewport(),
+      gap = Math.min(12, v.w / 20, v.h / 20),
+      a = fitAnchor(anchor);
+    return {
+      anchor: { x: a.x, y: a.y },
+      size: { width: ui.width, height: ui.height },
+      direction,
+      relative: {
+        x: (a.x - gap) / Math.max(1, v.w - 2 * gap - a.size),
+        y: (a.y - gap) / Math.max(1, v.h - 2 * gap - a.size),
+      },
+    };
+  }
+  function restoreLayout(value) {
+    const v = viewport(),
+      gap = Math.min(12, v.w / 20, v.h / 20),
+      size = fitAnchor(anchor).size;
+    anchor = value.relative
+      ? fitAnchor({
+          x:
+            gap +
+            clamp(value.relative.x, 0, 1) * Math.max(0, v.w - 2 * gap - size),
+          y:
+            gap +
+            clamp(value.relative.y, 0, 1) * Math.max(0, v.h - 2 * gap - size),
+        })
+      : fitAnchor(value.anchor);
+    ui.width = value.size.width;
+    ui.height = value.size.height;
+    direction = value.direction;
+    positionFromAnchor();
+  }
+  function persistLayout(includeSize = false) {
+    if (includeSize) {
+      ui.width = geometry.width;
+      ui.height = geometry.height;
+    }
+    savedLayout = layoutSnapshot();
+    saveUI({
+      x: geometry.x,
+      y: geometry.y,
+      ballX: anchor.x,
+      ballY: anchor.y,
+      direction,
+      width: ui.width,
+      height: ui.height,
+      layout: savedLayout,
+    });
+  }
+  function paint() {
+    if (!geometry)
+      geometry = fitRect({
+        x: ui.x,
+        y: ui.y,
+        width: ui.width,
+        height: ui.height,
+      });
+    win.classList.toggle("hidden", ui.collapsed);
+    ball.classList.toggle("hidden", !ui.collapsed);
+    win.inert = ui.collapsed;
+    ball.inert = !ui.collapsed;
+    ball.setAttribute("aria-expanded", String(!ui.collapsed));
+    root.setAttribute("data-bcp-theme", ui.theme);
+    root.dataset.density = ui.density;
+    root.dataset.opaque = String(ui.opaque);
+    root.style.setProperty("--bcp-size", ui.font + "px");
+    $("theme-btn").textContent =
+      ({ dark: "暗色", light: "亮色", acnh: "动森" }[ui.theme] || "主题") +
+      " ▾";
+    renderGeometry();
+  }
+  function positionFromAnchor() {
+    const v = viewport(),
+      gap = Math.min(12, v.w / 20, v.h / 20),
+      a = fitAnchor(anchor),
+      desired = fitRect({ x: gap, y: gap, width: ui.width, height: ui.height });
+    const room = {
+      left: a.x + a.size - gap,
+      right: v.w - gap - a.x,
+      up: a.y + a.size - gap,
+      down: v.h - gap - a.y,
+    };
+    const [py, px] = direction.split("-");
+    const choose = (a, b, size, preferred) =>
+      room[preferred] >= size
+        ? preferred
+        : room[a] >= size
+          ? a
+          : room[b] >= size
+            ? b
+            : room[a] >= room[b]
+              ? a
+              : b;
+    const horizontal = choose("left", "right", desired.width, px),
+      vertical = choose("up", "down", desired.height, py);
+    const width = Math.min(desired.width, room[horizontal]),
+      height = Math.min(desired.height, room[vertical]);
+    direction = vertical + "-" + horizontal;
+    anchor = a;
+    geometry = {
+      x: horizontal === "left" ? a.x + a.size - width : a.x,
+      y: vertical === "up" ? a.y + a.size - height : a.y,
+      width,
+      height,
+    };
+  }
+  function collapse() {
+    closeMenu();
+    gestureUntil = 0;
+    suppressClick = false;
+    if (!ui.layout) persistLayout();
+    saveUI({ collapsed: true });
+    paint();
+    ball.focus({ preventScroll: true });
+  }
+  function expand() {
+    positionFromAnchor();
+    saveUI({ collapsed: false, direction, x: geometry.x, y: geometry.y });
+    paint();
+    $("collapse-btn").focus({ preventScroll: true });
+  }
+  function resetLayout() {
+    const v = viewport();
+    direction = "up-left";
+    anchor = fitAnchor({ x: v.w - ui.ball - 20, y: v.h - ui.ball - 24 });
+    saveUI({ width: 420, height: 620 });
+    positionFromAnchor();
+    persistLayout();
+    paint();
+    notify("已恢复窗口位置与大小；队列和收藏未改动。");
+  }
+  GM_registerMenuCommand("⚙️ 找不到悬浮窗？重置位置", () => {
+    resetLayout();
+    saveUI({ collapsed: false });
+    paint();
+  });
+  $("collapse-btn").onclick = collapse;
+  ball.onclick = () => {
+    if (!suppressClick && Date.now() > gestureUntil) expand();
+  };
+  ball.tabIndex = 0;
+  ball.setAttribute("role", "button");
+  ball.setAttribute("aria-label", "展开混合播放列表");
+  ball.onkeydown = (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      expand();
+    }
+  };
+  function resizedRect(rect, edge, dx, dy) {
+    const v = viewport(),
+      gap = Math.min(12, v.w / 20, v.h / 20),
+      minW = Math.min(320, rect.width),
+      minH = Math.min(400, rect.height);
+    let left = rect.x,
+      right = rect.x + rect.width,
+      top = rect.y,
+      bottom = rect.y + rect.height;
+    if (edge.includes("w")) left = clamp(left + dx, gap, right - minW);
+    if (edge.includes("e")) right = clamp(right + dx, left + minW, v.w - gap);
+    if (edge.includes("n")) top = clamp(top + dy, gap, bottom - minH);
+    if (edge.includes("s")) bottom = clamp(bottom + dy, top + minH, v.h - gap);
+    return { x: left, y: top, width: right - left, height: bottom - top };
+  }
+  function attachGesture(handle, kind, edge) {
+    handle.addEventListener("pointerdown", (e) => {
+      if (
+        e.button !== 0 ||
+        (kind === "panel" && e.target.closest("button,a,input,[role=combobox]"))
+      )
+        return;
+      closeMenu();
+      e.preventDefault();
+      gesture = {
+        id: e.pointerId,
+        handle,
+        kind,
+        edge,
+        startX: e.clientX,
+        startY: e.clientY,
+        rect: { ...geometry },
+        anchor: { ...anchor },
+        viewport: viewport(),
+        moved: false,
+      };
+      suppressClick = false;
+      handle.setPointerCapture(e.pointerId);
+      root.classList.add("bcp-dragging");
+    });
+    handle.addEventListener("pointermove", (e) => {
+      if (!gesture || gesture.handle !== handle || gesture.id !== e.pointerId)
+        return;
+      const dx = e.clientX - gesture.startX,
+        dy = e.clientY - gesture.startY;
+      if (Math.hypot(dx, dy) < 3 && !gesture.moved) return;
+      gesture.moved = true;
+      suppressClick = true;
+      if (kind === "ball") {
+        direction = "up-left";
+        anchor = fitAnchor({
+          x: gesture.anchor.x + dx,
+          y: gesture.anchor.y + dy,
         });
-    }
-
-    let ballDragging = false; let ballClickPrevent = false;
-    ball.addEventListener('mousedown', (e) => {
-        ballDragging = true; ballClickPrevent = false;
-        let ox = e.clientX - ball.getBoundingClientRect().left; let oy = e.clientY - ball.getBoundingClientRect().top;
-        const move = (em) => {
-            if (Math.abs(em.clientX - (ox + ball.getBoundingClientRect().left)) > 3 || Math.abs(em.clientY - (oy + ball.getBoundingClientRect().top)) > 3) ballClickPrevent = true;
-            let nx = Math.max(0, Math.min(em.clientX - ox, window.innerWidth - 52));
-            let ny = Math.max(0, Math.min(em.clientY - oy, window.innerHeight - 52));
-            ball.style.left = nx + 'px'; ball.style.top = ny + 'px';
-            uiState.ballX = nx; updateBallPositionClass();
-        };
-        const up = () => {
-            ballDragging = false; document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up);
-            uiState.ballX = ball.offsetLeft; uiState.ballY = ball.offsetTop; saveUIState();
-        };
-        document.addEventListener('mousemove', move); document.addEventListener('mouseup', up);
+        positionFromAnchor();
+        renderGeometry(false);
+      } else {
+        geometry =
+          kind === "resize"
+            ? resizedRect(gesture.rect, edge, dx, dy)
+            : fitRect({
+                ...gesture.rect,
+                x: gesture.rect.x + dx,
+                y: gesture.rect.y + dy,
+              });
+        renderGeometry(true);
+      }
     });
-
-    // --- 核心逻辑：独立坐标，收起展开定位绑定 ---
-
-    // 1. 收起面板：让悬浮球精确对齐到“缩小键”的正中间
-    collapseBtn.onclick = () => {
-        uiState.collapsed = true;
-
-        let vw = window.innerWidth || 1000;
-        let vh = window.innerHeight || 1000;
-
-        // 获取缩小按钮的实际屏幕坐标，计算其中心点，然后减去悬浮球一半的宽高(26px)
-        let btnRect = collapseBtn.getBoundingClientRect();
-        uiState.ballX = btnRect.left + btnRect.width / 2 - 26;
-        uiState.ballY = btnRect.top + btnRect.height / 2 - 26;
-
-        uiState.ballX = Math.max(0, Math.min(uiState.ballX, vw - 52));
-        uiState.ballY = Math.max(0, Math.min(uiState.ballY, vh - 52));
-        ball.style.left = uiState.ballX + 'px'; ball.style.top = uiState.ballY + 'px';
-
-        saveUIState();
-        win.classList.add('hidden'); ball.classList.remove('hidden');
-        updateBallPositionClass();
+    const end = () => {
+      if (!gesture || gesture.handle !== handle) return;
+      const moved = gesture.moved;
+      if (moved) {
+        persistLayout(kind !== "ball");
+        gestureUntil = Date.now();
+      }
+      gesture = null;
+      root.classList.remove("bcp-dragging");
+      setTimeout(() => {
+        suppressClick = false;
+      }, 0);
     };
-
-    // 2. 展开面板：悬浮窗展开时，反向将缩小键对齐到悬浮球的位置
-    ball.onclick = (e) => {
-        if (ballClickPrevent) return;
-        uiState.collapsed = false;
-
-        // 先移除 hidden，使其加入渲染树从而能获取到精准的宽高坐标 (同一事件循环中计算不会产生闪烁)
-        win.classList.remove('hidden'); ball.classList.add('hidden');
-
-        let vw = window.innerWidth || 1000;
-        let vh = window.innerHeight || 1000;
-
-        // 计算缩小键相对于窗口左上角的内部偏移量
-        let btnRect = collapseBtn.getBoundingClientRect();
-        let winRect = win.getBoundingClientRect();
-        let offsetX = (btnRect.left + btnRect.width / 2) - winRect.left;
-        let offsetY = (btnRect.top + btnRect.height / 2) - winRect.top;
-
-        // 反向推导窗口的新坐标，使缩小键精确落在原悬浮球的中心位置 (ballX+26, ballY+26)
-        uiState.x = Math.max(0, Math.min(uiState.ballX + 26 - offsetX, vw - uiState.width));
-        uiState.y = Math.max(0, Math.min(uiState.ballY + 26 - offsetY, vh - uiState.height));
-
-        win.style.left = uiState.x + 'px'; win.style.top = uiState.y + 'px';
-
-        saveUIState();
-    };
-
-    // --- 数据抓取与播放控制逻辑 ---
-    function getCurrentFid() { let match = window.location.href.match(/fid=(\d+)/) || window.location.href.match(/ml(\d+)/); return match ? match[1] : null; }
-    setInterval(() => { let fid = getCurrentFid(); if (fid) { addCurrentBtn.style.display = 'flex'; addCurrentBtn.innerHTML = `➕ 将当前收藏夹 (FID:${fid}) 加入列表`; } else addCurrentBtn.style.display = 'none'; }, 1000);
-
-    async function fetchFav(fid) {
-        let pn = 1; let validList = []; let invalidCount = 0; let hasMore = true; let folderName = '未知收藏夹';
-        addCurrentBtn.innerText = '正在抓取，请稍候...'; addCurrentBtn.disabled = true;
-        while (hasMore) {
-            try {
-                let res = await fetch(`https://api.bilibili.com/x/v3/fav/resource/list?media_id=${fid}&pn=${pn}&ps=20`, {credentials: 'include'});
-                let json = await res.json(); if (json.code !== 0) break;
-                if (pn === 1 && json.data && json.data.info) folderName = json.data.info.title;
-                for (let m of json.data.medias || []) {
-                    if (m.title.includes('已失效') || m.title === '已失效视频') invalidCount++;
-                    else { let cover = m.cover || m.pic || ''; if(cover && cover.startsWith('http')) cover += '@160w_100h_1c.webp'; validList.push({ bvid: m.bvid, title: m.title, cover: cover }); }
-                }
-                hasMore = json.data.has_more; pn++; if (pn > 100) break; await new Promise(r => setTimeout(r, 200));
-            } catch (e) { break; }
-        }
-        addCurrentBtn.innerText = '➕ 将当前收藏夹加入列表'; addCurrentBtn.disabled = false; return { validList, invalidCount, folderName };
-    }
-
-    addCurrentBtn.onclick = async () => {
-        let fid = getCurrentFid(); if (!fid) return;
-        let currentUrl = window.location.href;
-        let { validList, invalidCount, folderName } = await fetchFav(fid);
-        if (validList.length === 0 && invalidCount === 0) return alert('未读取到视频，请检查私密状态。');
-        playState.originalList = playState.originalList.concat(validList); playState.currentList = playState.currentList.concat(validList);
-        if (!playState.folderNames.includes(folderName)) playState.folderNames.push(folderName);
-
-        if (!playState.folders) playState.folders = [];
-        if (!playState.folders.find(f => f.fid === fid)) {
-            playState.folders.push({ fid, name: folderName, url: currentUrl });
-        }
-        savePlayState();
-        alert(`载入成功！\n✅ 加入 ${validList.length} 个视频。\n🗑 拦截 ${invalidCount} 个失效视频！`);
-    };
-
-    document.getElementById('bcp-shuffle').onclick = () => {
-        if (!playState.originalList.length) return;
-        let currentVideo = null; if (playState.currentList.length > 0 && playState.currentIndex !== -1 && playState.currentIndex < playState.currentList.length) { currentVideo = playState.currentList[playState.currentIndex]; }
-        let pool = [...playState.originalList];
-        if (currentVideo) { let idx = pool.findIndex(v => v.bvid === currentVideo.bvid); if (idx > -1) pool.splice(idx, 1); }
-        for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
-        if (currentVideo) { playState.currentList = [currentVideo, ...pool]; playState.currentIndex = 0; } else playState.currentList = pool;
-        savePlayState();
-    };
-
-    document.getElementById('bcp-restore').onclick = () => {
-        if (!playState.originalList.length) return;
-        let currentVideo = playState.currentIndex !== -1 ? playState.currentList[playState.currentIndex] : null;
-        playState.currentList = [...playState.originalList];
-        if (currentVideo) { let newIdx = playState.currentList.findIndex(v => v.bvid === currentVideo.bvid); playState.currentIndex = newIdx > -1 ? newIdx : -1; } else playState.currentIndex = -1;
-        savePlayState();
-    };
-
-    document.getElementById('bcp-clear').onclick = () => {
-        if(confirm('确定要清空混合播放列表吗？')) {
-            playState.originalList = []; playState.currentList = [];
-            playState.currentIndex = -1; playState.isPlaying = false;
-            playState.folderNames = []; playState.folders = [];
-            savePlayState();
-        }
-    };
-
-    function renderList() {
-        document.getElementById('bcp-count').innerText = playState.currentList.length;
-
-        let folderHtml = '';
-        if (playState.folders && playState.folders.length > 0) {
-            folderHtml = playState.folders.map(f => `<a href="${f.url || '#'}" target="_blank" style="color:inherit;text-decoration:underline;">${f.name}</a>`).join('、');
-        } else if (playState.folderNames && playState.folderNames.length > 0) {
-            folderHtml = playState.folderNames.join('、');
-        } else {
-            folderHtml = '暂无收藏夹';
-        }
-        document.getElementById('bcp-folder-names').innerHTML = folderHtml;
-        document.getElementById('bcp-tt-folders').innerText = (playState.folders && playState.folders.length > 0) ? playState.folders.map(f=>f.name).join('、') : (playState.folderNames.length > 0 ? playState.folderNames.join('、') : '暂无收藏夹');
-
-        if (playState.currentList.length === 0) { listEl.innerHTML = `<div style="padding:60px 20px; text-align:center; color:var(--bcp-text-sec); opacity:0.8;">列表空空如也，去收藏夹页面添加吧</div>`; }
-        else {
-            let html = '';
-            playState.currentList.forEach((item, index) => {
-                let isActive = (playState.currentIndex !== -1 && index === playState.currentIndex) ? 'active' : '';
-                html += `<div class="bcp-item ${isActive}" data-index="${index}"><img class="bcp-item-cover" src="${item.cover}" referrerpolicy="no-referrer"><div class="bcp-item-info"><div class="bcp-item-title" title="${item.title}">${item.title}</div><div class="bcp-item-meta">第 ${index + 1} 首</div></div><div class="bcp-item-del" data-index="${index}" title="移出列表"><svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></div></div>`;
-            });
-            listEl.innerHTML = html; setTimeout(() => { let activeItem = listEl.querySelector('.active'); if (activeItem) activeItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 150);
-        }
-
-        let statusText = document.getElementById('bcp-status-text'); let playingTitleEl = document.getElementById('bcp-playing-title'); let ttPlayingEl = document.getElementById('bcp-tt-playing'); let playBtn = document.getElementById('bcp-play-pause');
-        if (playState.currentList.length > 0) {
-            if (playState.currentIndex !== -1) {
-                let currentTitle = playState.currentList[playState.currentIndex]?.title || '未知视频'; statusText.innerHTML = `进度: <span style="color:var(--bcp-accent)">${playState.currentIndex + 1}</span> / ${playState.currentList.length}`; playingTitleEl.innerText = currentTitle; ttPlayingEl.innerText = currentTitle;
-            } else { statusText.innerHTML = `总计: <span style="color:var(--bcp-accent)">${playState.currentList.length}</span> 首`; playingTitleEl.innerText = '等待选择播放...'; ttPlayingEl.innerText = '等待选择播放...'; }
-            playBtn.innerHTML = playState.isPlaying ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>` : `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>`;
-        } else { statusText.innerText = '未在播放'; playingTitleEl.innerText = '等待选择播放...'; ttPlayingEl.innerText = '等待选择播放...'; playBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>`; }
-    }
-
-    listEl.addEventListener('click', (e) => {
-        let delBtn = e.target.closest('.bcp-item-del');
-        if (delBtn) {
-            e.stopPropagation(); let idx = parseInt(delBtn.getAttribute('data-index')); playState.currentList.splice(idx, 1);
-            if (playState.currentIndex !== -1) { if (idx < playState.currentIndex) playState.currentIndex--; else if (idx === playState.currentIndex) { playState.isPlaying = false; playState.currentIndex = -1; } }
-            let origIdx = playState.originalList.findIndex(v => v.bvid === playState.currentList[idx]?.bvid); if(origIdx > -1) playState.originalList.splice(origIdx, 1);
-            savePlayState(); return;
-        }
-        let item = e.target.closest('.bcp-item'); if (item) { playState.currentIndex = parseInt(item.getAttribute('data-index')); playState.isPlaying = true; savePlayState(); jumpToCurrent(); }
+    for (const type of ["pointerup", "pointercancel", "lostpointercapture"])
+      handle.addEventListener(type, end);
+    window.addEventListener("blur", end);
+    window.addEventListener("resize", end);
+    window.visualViewport?.addEventListener("resize", end);
+  }
+  attachGesture($("drag-handle"), "panel");
+  attachGesture(ball, "ball");
+  for (const edge of ["n", "s", "w", "e", "nw", "ne", "sw", "se"]) {
+    const handle = document.createElement("button");
+    handle.type = "button";
+    handle.id = edge === "se" ? "bcp-resize" : "bcp-resize-" + edge;
+    handle.dataset.edge = edge;
+    handle.className = "bcp-resize-handle";
+    handle.title = "拖动调整窗口大小；方向键微调";
+    handle.setAttribute(
+      "aria-label",
+      {
+        n: "上边",
+        s: "下边",
+        w: "左边",
+        e: "右边",
+        nw: "左上角",
+        ne: "右上角",
+        sw: "左下角",
+        se: "右下角",
+      }[edge] + "调整大小",
+    );
+    handle.tabIndex = edge === "se" ? 0 : -1;
+    root.appendChild(handle);
+    resizeHandles.push(handle);
+    attachGesture(handle, "resize", edge);
+    handle.addEventListener("keydown", (e) => {
+      if (!e.key.startsWith("Arrow")) return;
+      e.preventDefault();
+      geometry = resizedRect(
+        geometry,
+        edge,
+        e.key === "ArrowLeft" ? -10 : e.key === "ArrowRight" ? 10 : 0,
+        e.key === "ArrowUp" ? -10 : e.key === "ArrowDown" ? 10 : 0,
+      );
+      renderGeometry(true);
+      persistLayout(true);
     });
+  }
+  $("drag-handle").addEventListener("dblclick", (e) => {
+    if (
+      ui.double &&
+      !e.target.closest("button,a,input") &&
+      !gesture &&
+      Date.now() > gestureUntil &&
+      !$("confirm").open
+    )
+      collapse();
+  });
+  const adaptViewport = () => {
+    closeMenu();
+    restoreLayout(savedLayout);
+    renderGeometry(false);
+  };
+  window.addEventListener("resize", adaptViewport);
+  window.visualViewport?.addEventListener("resize", adaptViewport);
+  window.visualViewport?.addEventListener("scroll", adaptViewport);
+  if (ui.layout) {
+    savedLayout = ui.layout;
+    restoreLayout(savedLayout);
+  } else {
+    // Preserve the visible legacy window once, then migrate to the single anchor model.
+    if (!ui.collapsed) {
+      geometry = fitRect({
+        x: ui.x,
+        y: ui.y,
+        width: ui.width,
+        height: ui.height,
+      });
+      anchor = anchorFromPanel();
+    } else positionFromAnchor();
+    savedLayout = layoutSnapshot();
+  }
+  paint();
 
-    // 这里通过附加 ?t=0 与 &bcp_start=1 配合前面的拦截，使得视频总是从开头播放而无视历史记录
-    function jumpToCurrent() {
-        let item = playState.currentList[playState.currentIndex];
-        if (item) window.location.href = `https://www.bilibili.com/video/${item.bvid}?t=0&bcp_start=1`;
+  // Commit the saved state before enabling transitions: never animate from
+  // the template's default expanded window during page startup.
+  root.hidden = false;
+  void win.offsetWidth;
+  root.classList.remove("bcp-initializing");
+
+  const settings = $("settings");
+  let settingsOpen = false;
+  const choices = {
+    theme: [
+      ["dark", "暗色"],
+      ["light", "亮色"],
+      ["acnh", "动森"],
+    ],
+    font: [
+      [13, "13 px · 默认"],
+      [15, "15 px"],
+      [17, "17 px"],
+    ],
+    density: [
+      ["standard", "标准"],
+      ["compact", "紧凑"],
+    ],
+    ball: [
+      [44, "44 px"],
+      [52, "52 px · 默认"],
+      [64, "64 px"],
+    ],
+  };
+  function syncSettings() {
+    for (const [key, options] of Object.entries(choices)) {
+      $(key + "-value").textContent =
+        options.find(([value]) => value === ui[key])?.[1] || String(ui[key]);
     }
+    for (const key of ["double", "outside", "opaque"])
+      $("setting-" + key).checked = ui[key];
+  }
+  function applySetting(key, value) {
+    saveUI({ [key]: value });
+    paint();
+    if (key === "ball") persistLayout();
+    syncSettings();
+  }
+  function receiveLayout(value) {
+    if (!value?.layout || gesture) return;
+    const localCollapsed = ui.collapsed;
+    const changed =
+      JSON.stringify(value.layout) !== JSON.stringify(savedLayout);
+    const preferencesChanged = [
+      "theme",
+      "font",
+      "density",
+      "ball",
+      "double",
+      "outside",
+      "opaque",
+    ].some((key) => value[key] !== ui[key]);
+    if (changed || preferencesChanged) closeMenu(true);
+    ui = { ...ui, ...value, collapsed: localCollapsed };
+    if (changed) {
+      savedLayout = value.layout;
+      restoreLayout(savedLayout);
+    }
+    paint();
+    syncSettings();
+  }
+  GM_addValueChangeListener("BCP_UI", (_key, _old, value, remote) => {
+    if (remote) receiveLayout(value);
+  });
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) receiveLayout(GM_getValue("BCP_UI", {}));
+  });
+  function showSettings(open) {
+    closeMenu();
+    if (open) rememberView();
+    settingsOpen = open;
+    settings.hidden = !open;
+    list.hidden = open;
+    $("list-tools").hidden = open;
+    root.querySelector(".bcp-actions").hidden = open;
+    if (open) {
+      syncSettings();
+      $("settings-back").focus({ preventScroll: true });
+    } else {
+      restoreView(viewAnchor);
+      $("settings-open").focus({ preventScroll: true });
+    }
+  }
+  $("settings-open").onclick = () => showSettings(true);
+  $("settings-back").onclick = () => showSettings(false);
+  $("reset-layout").onclick = resetLayout;
+  for (const key of Object.keys(choices))
+    $("setting-" + key).onclick = () =>
+      openMenu(
+        $("setting-" + key),
+        choices[key].map(([value, label]) => ({
+          value,
+          label,
+          selected: ui[key] === value,
+        })),
+        (value) => applySetting(key, value),
+        "listbox",
+      );
+  settings.addEventListener("change", (e) => {
+    const key = e.target.id.replace("bcp-setting-", "");
+    if (["double", "outside", "opaque"].includes(key))
+      applySetting(key, e.target.checked);
+  });
 
-    document.getElementById('bcp-play-pause').onclick = () => {
-        if (!playState.currentList.length) return alert('列表为空！');
-        if (playState.currentIndex === -1) { playState.currentIndex = 0; playState.isPlaying = true; savePlayState(); jumpToCurrent(); return; }
-        let video = document.querySelector('.bpx-player-video-area video, #bilibili-player video, video');
-        if (window.location.pathname.includes(playState.currentList[playState.currentIndex]?.bvid) && video) {
-            if (video.paused) { video.play(); playState.isPlaying = true; } else { video.pause(); playState.isPlaying = false; } savePlayState();
-        } else { playState.isPlaying = !playState.isPlaying; savePlayState(); if (playState.isPlaying) jumpToCurrent(); }
+  // One portal menu vocabulary for source navigation, quick theme and settings.
+  const menu = document.createElement("div");
+  menu.id = "bcp-menu";
+  menu.className = "bcp-dropdown-menu bcp-menu-panel";
+  menu.hidden = true;
+  root.appendChild(menu);
+  let menuOwner = null;
+  function closeMenu(restoreFocus = false) {
+    if (typeof menuOwner === "undefined" || !menuOwner) return;
+    const owner = menuOwner;
+    menuOwner = null;
+    menu.hidden = true;
+    menu.classList.remove("show");
+    owner.setAttribute("aria-expanded", "false");
+    if (restoreFocus) owner.focus({ preventScroll: true });
+  }
+  function openMenu(trigger, options, choose, role = "menu") {
+    if (menuOwner === trigger) {
+      closeMenu(true);
+      return;
+    }
+    closeMenu();
+    menuOwner = trigger;
+    trigger.setAttribute("aria-controls", "bcp-menu");
+    trigger.setAttribute("aria-haspopup", role);
+    menu.replaceChildren();
+    menu.setAttribute("role", role);
+    menu.setAttribute("aria-label", trigger.textContent.trim());
+    for (const option of options) {
+      const node = document.createElement(option.url ? "a" : "button");
+      node.className = "bcp-menu-item";
+      if (!option.url) node.type = "button";
+      else {
+        node.href = safeURL(option.url);
+        node.target = "_blank";
+        node.rel = "noopener noreferrer";
+      }
+      node.dataset.value = String(option.value ?? "");
+      node.setAttribute("role", role === "listbox" ? "option" : "menuitem");
+      if (role === "listbox")
+        node.setAttribute("aria-selected", String(Boolean(option.selected)));
+      const text = document.createElement("span");
+      text.textContent = option.label;
+      node.appendChild(text);
+      if (option.selected) {
+        const check = document.createElement("span");
+        check.className = "bcp-menu-check";
+        check.innerHTML = icon("check");
+        node.appendChild(check);
+      }
+      node.onclick = () => {
+        closeMenu(true);
+        if (choose) choose(option.value);
+      };
+      menu.appendChild(node);
+    }
+    if (!options.length) {
+      const empty = document.createElement("div");
+      empty.className = "bcp-jump-empty";
+      empty.textContent = "暂无载入收藏夹";
+      menu.appendChild(empty);
+    }
+    menu.hidden = false;
+    menu.classList.add("show");
+    trigger.setAttribute("aria-expanded", "true");
+    const v = viewport(),
+      r = trigger.getBoundingClientRect();
+    const width = Math.min(Math.max(180, r.width), v.w - 16);
+    menu.style.width = width + "px";
+    menu.style.minWidth = "0";
+    menu.style.maxHeight = Math.min(260, v.h - 16) + "px";
+    const h = menu.offsetHeight;
+    menu.style.left =
+      clamp(r.right - width, v.x + 8, v.x + v.w - width - 8) + "px";
+    menu.style.top =
+      clamp(
+        r.bottom + h + 6 <= v.y + v.h - 8 ? r.bottom + 6 : r.top - h - 6,
+        v.y + 8,
+        v.y + v.h - h - 8,
+      ) + "px";
+    (
+      menu.querySelector('[aria-selected="true"]') ||
+      menu.querySelector("button,a")
+    )?.focus({ preventScroll: true });
+  }
+  menu.addEventListener("keydown", (e) => {
+    const items = [...menu.querySelectorAll("button,a")],
+      i = items.indexOf(document.activeElement);
+    if (e.key === "Escape") {
+      e.stopPropagation();
+      closeMenu(true);
+    } else if (["ArrowDown", "ArrowUp", "Home", "End"].includes(e.key)) {
+      e.preventDefault();
+      const n =
+        e.key === "Home"
+          ? 0
+          : e.key === "End"
+            ? items.length - 1
+            : (i + (e.key === "ArrowDown" ? 1 : -1) + items.length) %
+              items.length;
+      items[n]?.focus();
+    } else if (e.key === "Tab") closeMenu();
+  });
+  settings.addEventListener("scroll", () => closeMenu(), { passive: true });
+  $("theme-btn").onclick = () =>
+    openMenu(
+      $("theme-btn"),
+      choices.theme.map(([value, label]) => ({
+        value,
+        label,
+        selected: value === ui.theme,
+      })),
+      (value) => applySetting("theme", value),
+      "listbox",
+    );
+  $("jump-btn").onclick = () => {
+    latest();
+    openMenu(
+      $("jump-btn"),
+      state.folders.map((f) => ({ label: f.name, url: f.url })),
+      null,
+    );
+  };
+  root.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape" || $("confirm").open) return;
+    if (menuOwner) {
+      closeMenu(true);
+      return;
+    }
+    if (settingsOpen) showSettings(false);
+    else collapse();
+  });
+  document.addEventListener(
+    "pointerdown",
+    (e) => {
+      const inside = e.composedPath().includes(root);
+      if (
+        menuOwner &&
+        !e.composedPath().includes(menu) &&
+        !e.composedPath().includes(menuOwner)
+      )
+        closeMenu();
+      if (
+        e.button === 0 &&
+        !inside &&
+        ui.outside &&
+        !ui.collapsed &&
+        !gesture &&
+        Date.now() > gestureUntil &&
+        !$("confirm").open
+      )
+        collapse();
+    },
+    true,
+  );
+  // Confirmation targets a stable BV, never a possibly changed list index.
+  let pendingRemoval = null,
+    removalReturnFocus = null;
+  function requestRemoval(bvid) {
+    latest();
+    const item = state.currentList.find((v) => v.bvid === bvid);
+    if (!item) return;
+    closeMenu();
+    pendingRemoval = bvid;
+    removalReturnFocus = document.activeElement;
+    $("confirm-title").textContent = "从混合队列移除？";
+    $("confirm-song").textContent = item.title;
+    $("confirm-detail").textContent =
+      current()?.bvid === bvid
+        ? "不会删除 B站收藏。当前视频会继续播完，再接下一项。"
+        : "不会删除 B站收藏。移除后仍可撤销最近一次操作。";
+    $("confirm").showModal();
+    $("confirm-cancel").focus();
+  }
+  $("confirm-cancel").onclick = () => {
+    $("confirm").close();
+    pendingRemoval = null;
+  };
+  $("confirm-remove").onclick = () => {
+    const bvid = pendingRemoval;
+    $("confirm").close();
+    pendingRemoval = null;
+    if (bvid) remove(bvid);
+  };
+  $("confirm").addEventListener("keydown", (e) => {
+    if (e.key !== "Escape") return;
+    e.preventDefault();
+    e.stopPropagation();
+    $("confirm").close();
+    pendingRemoval = null;
+  });
+  $("confirm").addEventListener("cancel", () => {
+    pendingRemoval = null;
+  });
+  $("confirm").addEventListener("close", () => {
+    (removalReturnFocus?.isConnected ? removalReturnFocus : $("locate")).focus({
+      preventScroll: true,
+    });
+    removalReturnFocus = null;
+  });
+
+  // Browsing position belongs to a tab, not to the globally shared playback queue.
+  let savedView = {};
+  try {
+    savedView = JSON.parse(sessionStorage.getItem("BCP_VIEW") || "{}");
+  } catch {}
+  let listSignature = "",
+    viewAnchor = savedView;
+  function captureView() {
+    if (settingsOpen) return viewAnchor;
+    const rows = [...list.children];
+    const row = rows.find(
+      (el) => el.offsetTop + el.offsetHeight > list.scrollTop,
+    );
+    return {
+      bvid: row?.dataset.bvid,
+      offset: row ? list.scrollTop - row.offsetTop : 0,
+      top: list.scrollTop,
     };
+  }
+  function rememberView() {
+    if (!settingsOpen) {
+      viewAnchor = captureView();
+      try {
+        sessionStorage.setItem("BCP_VIEW", JSON.stringify(viewAnchor));
+      } catch {}
+    }
+  }
+  list.addEventListener("scroll", rememberView, { passive: true });
+  window.addEventListener("pagehide", rememberView);
+  function restoreView(anchor) {
+    const row = [...list.children].find(
+      (el) => el.dataset.bvid === anchor.bvid,
+    );
+    list.scrollTop = row
+      ? row.offsetTop + (anchor.offset || 0)
+      : anchor.top || 0;
+  }
+  function render() {
+    const signature = JSON.stringify(state.currentList);
+    if (signature !== listSignature) {
+      const anchor = listSignature ? captureView() : viewAnchor;
+      list.innerHTML = state.currentList.length
+        ? state.currentList
+            .map(
+              (item, index) =>
+                `<div class="bcp-item" data-bvid="${esc(item.bvid)}" data-index="${index}" tabindex="0" role="button" aria-label="播放 ${esc(item.title)}"><img class="bcp-item-cover" alt="" src="${esc(safeURL(item.cover))}" referrerpolicy="no-referrer"><div class="bcp-item-info"><div class="bcp-item-title" title="${esc(item.title)}">${esc(item.title)}</div><div class="bcp-item-meta">第 ${index + 1} 首${item.sources?.length ? " · " + esc(item.sources.map((s) => s.name).join("、")) : ""}</div></div><button class="bcp-item-del" data-bvid="${esc(item.bvid)}" title="仅移出混合队列，不删除 B站收藏" aria-label="移出 ${esc(item.title)}">×</button></div>`,
+            )
+            .join("")
+        : '<p style="padding:32px 20px;text-align:center">打开一个收藏夹，加入后再到其他收藏夹继续添加，即可混合随机播放。</p>';
+      listSignature = signature;
+      restoreView(anchor);
+    }
+    [...list.children].forEach((el, index) => {
+      el.classList.toggle(
+        "active",
+        !state.detached && index === state.currentIndex,
+      );
+      el.setAttribute(
+        "aria-current",
+        String(!state.detached && index === state.currentIndex),
+      );
+    });
+    $("count").textContent = state.currentList.length;
+    $("folder-names").textContent =
+      state.folders.map((f) => f.name).join("、") || "暂无收藏夹";
+    $("tt-folders").textContent = $("folder-names").textContent;
+    const item = current();
+    $("playing-title").textContent = item?.title || "等待选择播放…";
+    $("playing-title").title = item?.title || "";
+    $("tt-playing").textContent = item?.title || "等待选择播放…";
+    $("status-text").textContent = state.detached
+      ? "当前项已移出 · 播完继续"
+      : item
+        ? `${state.isPlaying ? "正在播放" : "已暂停"} · ${state.currentIndex + 1} / ${state.currentList.length}`
+        : `总计 ${state.currentList.length} 首`;
+    $("play-pause").innerHTML = state.isPlaying
+      ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>'
+      : '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
+    $("play-pause").setAttribute(
+      "aria-label",
+      state.isPlaying ? "暂停" : "播放",
+    );
+    $("undo").hidden = !state.undo;
+  }
+  $("locate").onclick = () => {
+    const row = [...list.children].find(
+      (el) => el.dataset.bvid === current()?.bvid,
+    );
+    if (row) row.scrollIntoView({ block: "nearest" });
+    else
+      notify(
+        state.detached
+          ? "当前视频已移出队列，正在等待播完。"
+          : "尚未选择播放项。",
+      );
+  };
+  function remove(bvid) {
+    latest();
+    const index = state.currentList.findIndex((v) => v.bvid === bvid);
+    if (index < 0) return;
+    const item = state.currentList[index],
+      originalIndex = state.originalList.findIndex((v) => v.bvid === bvid),
+      next = state.currentList[index + 1]?.bvid || null;
+    state.undo = { item, index, originalIndex };
+    if (current()?.bvid === bvid && !state.detached) {
+      state.detached = { item, next };
+      state.currentIndex = -1;
+    } else if (index < state.currentIndex) state.currentIndex--;
+    if (state.detached?.next === bvid) state.detached.next = next;
+    state.currentList.splice(index, 1);
+    state.originalList = state.originalList.filter((v) => v.bvid !== bvid);
+    save();
+    notify("已移出混合队列；B站收藏未改动。可撤销最近一次移除。");
+  }
+  $("undo").onclick = () => {
+    latest();
+    const undo = state.undo;
+    if (!undo) return;
+    const active = current()?.bvid;
+    if (!state.currentList.some((v) => v.bvid === undo.item.bvid)) {
+      state.currentList.splice(undo.index, 0, undo.item);
+      state.originalList.splice(Math.max(0, undo.originalIndex), 0, undo.item);
+    }
+    if (state.detached?.item.bvid === undo.item.bvid) state.detached = null;
+    state.currentIndex = state.currentList.findIndex((v) => v.bvid === active);
+    state.undo = null;
+    save();
+    notify("已撤销移除。");
+  };
+  list.onclick = (e) => {
+    const del = e.target.closest(".bcp-item-del");
+    if (del) {
+      e.stopPropagation();
+      requestRemoval(del.dataset.bvid);
+      return;
+    }
+    const row = e.target.closest(".bcp-item");
+    if (row) command("select", row.dataset.bvid);
+  };
+  list.onkeydown = (e) => {
+    if ((e.key === "Enter" || e.key === " ") && !e.target.closest("button")) {
+      e.preventDefault();
+      e.target.click();
+    }
+  };
+  $("shuffle").onclick = () => {
+    latest();
+    const active = state.detached ? null : current();
+    const pool = state.originalList.filter((v) => v.bvid !== active?.bvid);
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    state.currentList = active ? [active, ...pool] : pool;
+    state.currentIndex = active ? 0 : -1;
+    save();
+    notify("已打乱待播队列，当前视频继续播放。");
+  };
+  $("restore").onclick = () => {
+    latest();
+    const active = state.detached ? null : current();
+    state.currentList = [...state.originalList];
+    state.currentIndex = state.currentList.findIndex(
+      (v) => v.bvid === active?.bvid,
+    );
+    save();
+    notify("已恢复加入顺序，已移出的项目不会重新加入。");
+  };
+  $("clear").onclick = () => {
+    if (
+      !confirm(
+        "仅清空混合队列，不删除 B站收藏。当前网页视频继续播放，播完不再接播。确定清空？",
+      )
+    )
+      return;
+    latest();
+    state = { ...empty() };
+    save();
+    notify("混合队列已清空，B站收藏未改动。");
+  };
 
-    document.getElementById('bcp-next').onclick = () => {
-        if (!playState.currentList.length) return; if (playState.currentIndex === -1) playState.currentIndex = 0; else if (playState.currentIndex < playState.currentList.length - 1) playState.currentIndex++; else return alert('已经是最后一首了！');
-        playState.isPlaying = true; savePlayState(); jumpToCurrent();
-    };
-
-    document.getElementById('bcp-prev').onclick = () => {
-        if (!playState.currentList.length) return; if (playState.currentIndex === -1) playState.currentIndex = 0; else if (playState.currentIndex > 0) playState.currentIndex--;
-        playState.isPlaying = true; savePlayState(); jumpToCurrent();
-    };
-
-    setInterval(() => {
-        if (playState.currentIndex === -1) return;
-        let expectedBvid = playState.currentList[playState.currentIndex]?.bvid; if (!expectedBvid) return;
-        if (window.location.pathname.includes(expectedBvid)) {
-            let video = document.querySelector('.bpx-player-video-area video, #bilibili-player video, video');
-            if (video) {
-                if (video.readyState >= 2 && !video.ended) {
-                    if (video.paused && playState.isPlaying) { playState.isPlaying = false; savePlayState(); } else if (!video.paused && !playState.isPlaying) { playState.isPlaying = true; savePlayState(); }
-                }
-                if (playState.isPlaying && (video.ended || (video.duration > 0 && video.duration - video.currentTime < 0.5))) {
-                    let cp = parseInt(new URLSearchParams(window.location.search).get('p')) || window.__INITIAL_STATE__?.p || 1;
-                    if (cp >= (window.__INITIAL_STATE__?.videoData?.pages?.length || 1)) {
-                        playState.isPlaying = false; if (playState.currentIndex < playState.currentList.length - 1) { playState.currentIndex++; playState.isPlaying = true; savePlayState(); jumpToCurrent(); } else savePlayState();
-                    }
-                }
-            }
+  let loading = false;
+  const fid = () => location.href.match(/(?:fid=|ml)(\d+)/)?.[1];
+  function updateAdd() {
+    if (loading) return;
+    $("add-current").style.display = fid() ? "flex" : "none";
+    $("add-current").textContent = "➕ 将当前收藏夹加入混合队列";
+  }
+  updateAdd();
+  setInterval(updateAdd, 1000);
+  $("add-current").onclick = async () => {
+    const id = fid();
+    if (!id || loading) return;
+    loading = true;
+    $("add-current").disabled = true;
+    const items = [];
+    let invalid = 0,
+      name = "收藏夹",
+      failure = "",
+      hasMore = true;
+    try {
+      for (let pn = 1; hasMore && pn <= 100; pn++) {
+        $("add-current").textContent = `正在读取第 ${pn} 页…`;
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 15000);
+        try {
+          const response = await fetch(
+            `https://api.bilibili.com/x/v3/fav/resource/list?media_id=${id}&pn=${pn}&ps=20`,
+            { credentials: "include", signal: controller.signal },
+          );
+          const json = await response.json();
+          if (!response.ok || json.code !== 0 || !json.data)
+            throw Error("收藏夹无法读取");
+          name = json.data.info?.title || name;
+          for (const m of json.data.medias || []) {
+            if (!m.bvid || m.title?.includes("已失效")) invalid++;
+            else
+              items.push({
+                bvid: m.bvid,
+                title: m.title,
+                cover: m.cover || m.pic || "",
+                sources: [{ fid: id, name }],
+              });
+          }
+          hasMore = Boolean(json.data.has_more);
+        } finally {
+          clearTimeout(timeout);
         }
-    }, 500);
+        if (hasMore) await new Promise((resolve) => setTimeout(resolve, 200));
+      }
+      if (hasMore) failure = "已达到本次读取上限";
+    } catch {
+      failure = "读取中断（网络或访问权限）";
+    }
+    latest();
+    let added = 0,
+      merged = 0;
+    for (const item of items) {
+      const existing = state.originalList.find((v) => v.bvid === item.bvid);
+      if (existing) {
+        merged++;
+        existing.sources = [
+          ...new Map(
+            [...(existing.sources || []), ...item.sources].map((s) => [
+              s.fid,
+              s,
+            ]),
+          ).values(),
+        ];
+        const queued = state.currentList.find((v) => v.bvid === item.bvid);
+        if (queued) queued.sources = existing.sources;
+      } else {
+        state.originalList.push(item);
+        state.currentList.push(item);
+        added++;
+      }
+    }
+    if (items.length) {
+      const folder = { fid: id, name, url: location.href };
+      state.folders = [...state.folders.filter((f) => f.fid !== id), folder];
+      state.folderNames = state.folders.map((f) => f.name);
+      save();
+    }
+    loading = false;
+    $("add-current").disabled = false;
+    updateAdd();
+    notify(
+      `${failure ? failure + "；已保留读到的部分。" : "读取完成。"}新增 ${added}，合并 ${merged}，过滤失效 ${invalid}。${failure ? "点击“加入”重试，会合并重复视频。" : ""}`,
+    );
+  };
 
-    renderList();
+  // A renewable owner record routes controls to one playback page. Navigation transfers
+  // ownership with a single-use ticket; other tabs only browse/edit the shared queue.
+  const docId = crypto.randomUUID();
+  let navigating = false,
+    wasOwner = false;
+  const owner = () => GM_getValue("BCP_OWNER", null);
+  const owns = () => owner()?.id === docId;
+  const video = () =>
+    document.querySelector(
+      ".bpx-player-video-area video, #bilibili-player video, video",
+    );
+  function claim() {
+    GM_setValue("BCP_OWNER", { id: docId, time: Date.now() });
+    wasOwner = true;
+  }
+  window.addEventListener("pagehide", () => {
+    if (owns() && !navigating) GM_setValue("BCP_OWNER", null);
+  });
+  const ticket = new URLSearchParams(location.search).get("bcp_session");
+  const handoff = GM_getValue("BCP_HANDOFF", null);
+  if (
+    ticket &&
+    handoff?.token === ticket &&
+    Date.now() - handoff.time < 60000
+  ) {
+    if (handoff.view) viewAnchor = handoff.view;
+    GM_setValue("BCP_HANDOFF", null);
+    claim();
+  } else if (
+    current() &&
+    location.pathname.includes("/video/" + current().bvid) &&
+    (!owner() || Date.now() - owner().time > 15000)
+  )
+    claim();
+  GM_addValueChangeListener("BCP_OWNER", (_n, _o, value, remote) => {
+    if (remote && wasOwner && value?.id !== docId) {
+      video()?.pause();
+      wasOwner = false;
+    }
+  });
+  GM_addValueChangeListener("BCP_PLAY", (_n, _o, value, remote) => {
+    if (remote) {
+      state = normalize(value || empty());
+      render();
+    }
+  });
+  GM_addValueChangeListener("BCP_COMMAND", (_n, _o, value, remote) => {
+    if (
+      remote &&
+      owns() &&
+      value?.owner === docId &&
+      Date.now() - value.time < 10000
+    )
+      execute(value.action, value.bvid);
+  });
+  function guardDuplicatePlayback(event) {
+    const item = current(),
+      media = video();
+    if (
+      !item ||
+      !media ||
+      media.paused ||
+      owns() ||
+      !location.pathname.includes("/video/" + item.bvid)
+    )
+      return;
+    const target = owner();
+    if (target && Date.now() - target.time < 15000) {
+      if (event?.target === media) event.stopImmediatePropagation();
+      media.pause();
+      notify(
+        "该队列正在另一个标签页播放；本页已暂停副本。面板按钮可控制播放页。",
+      );
+    } else claim();
+  }
+  document.addEventListener("play", guardDuplicatePlayback, true);
+  guardDuplicatePlayback();
+  function jump(part = 1) {
+    const item = current();
+    if (!item) return;
+    rememberView();
+    const token = crypto.randomUUID();
+    GM_setValue("BCP_HANDOFF", { token, time: Date.now(), view: viewAnchor });
+    navigating = true;
+    location.href = `https://www.bilibili.com/video/${encodeURIComponent(item.bvid)}?p=${part}&t=0&bcp_start=1&bcp_session=${token}`;
+  }
+  function command(action, bvid) {
+    const target = owner();
+    if (target && target.id !== docId && Date.now() - target.time < 15000) {
+      GM_setValue("BCP_COMMAND", {
+        owner: target.id,
+        action,
+        bvid,
+        time: Date.now(),
+        id: crypto.randomUUID(),
+      });
+      notify("已向播放页发送操作；播放状态由视频实际结果更新。");
+    } else {
+      if (!owns()) claim();
+      execute(action, bvid);
+    }
+  }
+  async function execute(action, bvid) {
+    latest();
+    if (navigating) return;
+    if (
+      action === "toggle" &&
+      current() &&
+      location.pathname.includes("/video/" + current().bvid) &&
+      video()
+    ) {
+      const media = video();
+      try {
+        if (media.paused) await media.play();
+        else media.pause();
+        latest();
+        state.isPlaying = !media.paused;
+        save();
+        notify(media.paused ? "已暂停。" : "已开始播放。");
+      } catch {
+        latest();
+        state.isPlaying = false;
+        save();
+        notify("网页未能开始播放。请点 B站播放器播放键，或使用下一首跳过。");
+      }
+      return;
+    }
+    let index = state.currentIndex;
+    if (action === "select")
+      index = state.currentList.findIndex((v) => v.bvid === bvid);
+    else if (action === "next")
+      index = state.detached
+        ? state.currentList.findIndex((v) => v.bvid === state.detached.next)
+        : index + 1;
+    else if (action === "prev") index = Math.max(0, index - 1);
+    else if (index < 0) index = 0;
+    if (index < 0 || index >= state.currentList.length) {
+      notify("队列已结束。可选择条目重新播放。");
+      return;
+    }
+    state.detached = null;
+    state.currentIndex = index;
+    state.isPlaying = false;
+    save();
+    jump();
+  }
+  $("play-pause").onclick = () => command("toggle");
+  $("next").onclick = () => command("next");
+  $("prev").onclick = () => command("prev");
+  // Honor the initial start intent once metadata is ready; never poll-seek after the user seeks.
+  let startPending =
+    new URLSearchParams(location.search).get("bcp_start") === "1";
+  document.addEventListener(
+    "pointerdown",
+    (e) => {
+      if (!root.contains(e.target)) startPending = false;
+    },
+    true,
+  );
+  let endHandled = null;
+  // Userscript sandboxes cannot reliably see the page's __INITIAL_STATE__.
+  // Unknown metadata is not equivalent to a one-part video.
+  const partMetadata = new Map();
+  const retryParts = document.createElement("button");
+  retryParts.id = "bcp-retry-parts";
+  retryParts.className = "bcp-btn";
+  retryParts.textContent = "重试分 P 信息";
+  retryParts.hidden = true;
+  $("list-tools").appendChild(retryParts);
+  async function loadParts(bvid, retry = false) {
+    if (!retry && partMetadata.has(bvid)) return;
+    const record = { status: "loading", count: 0 };
+    partMetadata.set(bvid, record);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
+    try {
+      const response = await fetch(
+        `https://api.bilibili.com/x/web-interface/view?bvid=${encodeURIComponent(bvid)}`,
+        { credentials: "include", signal: controller.signal },
+      );
+      const json = await response.json();
+      if (
+        !response.ok ||
+        json.code !== 0 ||
+        json.data?.bvid !== bvid ||
+        !json.data.pages?.length
+      )
+        throw Error("Missing part metadata");
+      record.count = json.data.pages.length;
+      record.status = "ready";
+    } catch {
+      record.status = "error";
+    } finally {
+      clearTimeout(timeout);
+    }
+    if (current()?.bvid === bvid && owns()) {
+      retryParts.hidden = record.status !== "error";
+      if (record.status === "error")
+        notify(
+          "无法确认分 P 信息；播完将暂不接播。可重试分 P 信息，或手动下一首。",
+        );
+      if (video()?.ended) finishTrack();
+    }
+  }
+  retryParts.onclick = () => {
+    const item = current();
+    if (item) {
+      retryParts.hidden = true;
+      loadParts(item.bvid, true);
+    }
+  };
+  function finishTrack(event) {
+    if (!owns() || navigating) return;
+    latest();
+    const item = current(),
+      media = video();
+    if (
+      !item ||
+      !media ||
+      !media.ended ||
+      !location.pathname.includes("/video/" + item.bvid)
+    )
+      return;
+    const part = Math.max(
+      1,
+      Number(new URLSearchParams(location.search).get("p")) || 1,
+    );
+    // Consume the managed media end before native recommendations/part switching.
+    if (event?.target === media) event.stopImmediatePropagation();
+    const metadata = partMetadata.get(item.bvid);
+    if (!metadata || metadata.status !== "ready") {
+      if (state.isPlaying) {
+        state.isPlaying = false;
+        save();
+      }
+      if (!metadata) loadParts(item.bvid);
+      return;
+    }
+    const endKey = `${item.bvid}:${part}`;
+    if (endHandled === endKey) return;
+    endHandled = endKey;
+    if (part < metadata.count) {
+      state.isPlaying = false;
+      save();
+      jump(part + 1);
+      return;
+    }
+    const next = state.detached
+      ? state.currentList.findIndex((v) => v.bvid === state.detached.next)
+      : state.currentIndex + 1;
+    state.isPlaying = false;
+    if (next >= 0 && next < state.currentList.length) {
+      state.detached = null;
+      state.currentIndex = next;
+      save();
+      jump();
+    } else {
+      save();
+      notify("本轮播放结束。");
+    }
+  }
+  document.addEventListener("ended", finishTrack, true);
+  setInterval(() => {
+    guardDuplicatePlayback();
+    if (!owns() || navigating) return;
+    GM_setValue("BCP_OWNER", { id: docId, time: Date.now() });
+    const item = current(),
+      media = video();
+    if (!item || !media || !location.pathname.includes("/video/" + item.bvid))
+      return;
+    loadParts(item.bvid);
+    if (startPending && media.readyState >= 1) {
+      startPending = false;
+      media.currentTime = 0;
+      media
+        .play()
+        .catch(() => notify("浏览器未允许自动播放。请点 B站播放键继续。"));
+    }
+    if (
+      media.readyState >= 2 &&
+      !media.ended &&
+      state.isPlaying !== !media.paused
+    ) {
+      latest();
+      state.isPlaying = !media.paused;
+      save();
+    }
+    if (!media.ended) {
+      endHandled = null;
+      return;
+    }
+    finishTrack();
+  }, 500);
+  render();
 })();
